@@ -1,0 +1,363 @@
+[[package]]
+category = "main"
+description = "Allegro REST API"
+name = "allegro-pl-rest-api"
+optional = false
+python-versions = "*"
+version = "2019.0"
+
+[package.dependencies]
+certifi = "*"
+python-dateutil = "*"
+six = ">=1.10"
+urllib3 = ">=1.15"
+
+[[package]]
+category = "main"
+description = "A small Python module for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
+name = "appdirs"
+optional = false
+python-versions = "*"
+version = "1.4.3"
+
+[[package]]
+category = "main"
+description = "Classes Without Boilerplate"
+name = "attrs"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+version = "19.1.0"
+
+[[package]]
+category = "main"
+description = "backports.functools_lru_cache"
+name = "backports.functools-lru-cache"
+optional = false
+python-versions = ">=2.6"
+version = "1.5"
+
+[[package]]
+category = "main"
+description = "A decorator for caching properties in classes."
+name = "cached-property"
+optional = false
+python-versions = "*"
+version = "1.5.1"
+
+[[package]]
+category = "main"
+description = "Python package for providing Mozilla's CA Bundle."
+name = "certifi"
+optional = false
+python-versions = "*"
+version = "2019.3.9"
+
+[[package]]
+category = "main"
+description = "Universal encoding detector for Python 2 and 3"
+name = "chardet"
+optional = false
+python-versions = "*"
+version = "3.0.4"
+
+[[package]]
+category = "main"
+description = "Highly-optimized, pure-python HTTP server"
+name = "cheroot"
+optional = false
+python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*"
+version = "6.5.4"
+
+[package.dependencies]
+"backports.functools-lru-cache" = "*"
+more-itertools = ">=2.6"
+six = ">=1.11.0"
+
+[[package]]
+category = "main"
+description = "Object-Oriented HTTP framework"
+name = "cherrypy"
+optional = false
+python-versions = ">=3.5"
+version = "18.1.0"
+
+[package.dependencies]
+cheroot = ">=6.2.4"
+more-itertools = "*"
+portend = ">=2.1.1"
+pywin32 = "*"
+"zc.lockfile" = "*"
+
+[[package]]
+category = "main"
+description = "XML bomb protection for Python stdlib modules"
+name = "defusedxml"
+optional = false
+python-versions = "*"
+version = "0.5.0"
+
+[[package]]
+category = "main"
+description = "Internationalized Domain Names in Applications (IDNA)"
+name = "idna"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+version = "2.8"
+
+[[package]]
+category = "main"
+description = "An ISO 8601 date/time/duration parser and formatter"
+name = "isodate"
+optional = false
+python-versions = "*"
+version = "0.6.0"
+
+[package.dependencies]
+six = "*"
+
+[[package]]
+category = "main"
+description = "Functools like those found in stdlib"
+name = "jaraco.functools"
+optional = false
+python-versions = ">=2.7"
+version = "2.0"
+
+[package.dependencies]
+more-itertools = "*"
+
+[[package]]
+category = "main"
+description = "Powerful and Pythonic XML processing library combining libxml2/libxslt with the ElementTree API."
+name = "lxml"
+optional = false
+python-versions = "*"
+version = "4.3.2"
+
+[[package]]
+category = "main"
+description = ""
+name = "mattes-allegro-pl"
+optional = false
+python-versions = "^3.7"
+version = "0.1.0"
+
+[package.dependencies]
+allegro-pl-rest-api = "^2019.0"
+oauthlib = "^3.0"
+requests-oauthlib = "^1.2"
+tenacity = "^5.0"
+zeep = "^3.3"
+
+[package.source]
+reference = ""
+type = "directory"
+url = "../mattes-allegro-pl"
+
+[[package]]
+category = "main"
+description = "More routines for operating on iterables, beyond itertools"
+name = "more-itertools"
+optional = false
+python-versions = ">=3.4"
+version = "6.0.0"
+
+[[package]]
+category = "main"
+description = "A generic, spec-compliant, thorough implementation of the OAuth request-signing logic"
+name = "oauthlib"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+version = "3.0.1"
+
+[[package]]
+category = "main"
+description = "TCP port monitoring utilities"
+name = "portend"
+optional = false
+python-versions = ">=2.7"
+version = "2.3"
+
+[package.dependencies]
+tempora = ">=1.8"
+
+[[package]]
+category = "main"
+description = "Extensions to the standard Python datetime module"
+name = "python-dateutil"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
+version = "2.8.0"
+
+[package.dependencies]
+six = ">=1.5"
+
+[[package]]
+category = "main"
+description = "World timezone definitions, modern and historical"
+name = "pytz"
+optional = false
+python-versions = "*"
+version = "2018.9"
+
+[[package]]
+category = "main"
+description = "Python for Window Extensions"
+marker = "sys_platform == \"win32\""
+name = "pywin32"
+optional = false
+python-versions = "*"
+version = "224"
+
+[[package]]
+category = "main"
+description = "YAML parser and emitter for Python"
+name = "pyyaml"
+optional = false
+python-versions = "*"
+version = "5.1"
+
+[[package]]
+category = "main"
+description = "Python HTTP for Humans."
+name = "requests"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+version = "2.21.0"
+
+[package.dependencies]
+certifi = ">=2017.4.17"
+chardet = ">=3.0.2,<3.1.0"
+idna = ">=2.5,<2.9"
+urllib3 = ">=1.21.1,<1.25"
+
+[[package]]
+category = "main"
+description = "OAuthlib authentication support for Requests."
+name = "requests-oauthlib"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+version = "1.2.0"
+
+[package.dependencies]
+oauthlib = ">=3.0.0"
+requests = ">=2.0.0"
+
+[[package]]
+category = "main"
+description = "A utility belt for advanced users of python-requests"
+name = "requests-toolbelt"
+optional = false
+python-versions = "*"
+version = "0.9.1"
+
+[package.dependencies]
+requests = ">=2.0.1,<3.0.0"
+
+[[package]]
+category = "main"
+description = "Python 2 and 3 compatibility utilities"
+name = "six"
+optional = false
+python-versions = ">=2.6, !=3.0.*, !=3.1.*"
+version = "1.12.0"
+
+[[package]]
+category = "main"
+description = "Objects and routines pertaining to date and time (tempora)"
+name = "tempora"
+optional = false
+python-versions = ">=2.7"
+version = "1.14"
+
+[package.dependencies]
+"jaraco.functools" = ">=1.20"
+pytz = "*"
+six = "*"
+
+[[package]]
+category = "main"
+description = "Retry code until it succeeeds"
+name = "tenacity"
+optional = false
+python-versions = "*"
+version = "5.0.3"
+
+[package.dependencies]
+six = ">=1.9.0"
+
+[[package]]
+category = "main"
+description = "HTTP library with thread-safe connection pooling, file post, and more."
+name = "urllib3"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, <4"
+version = "1.24.1"
+
+[[package]]
+category = "main"
+description = "Basic inter-process locks"
+name = "zc.lockfile"
+optional = false
+python-versions = "*"
+version = "1.4"
+
+[package.dependencies]
+setuptools = "*"
+
+[[package]]
+category = "main"
+description = "A modern/fast Python SOAP client based on lxml / requests"
+name = "zeep"
+optional = false
+python-versions = "*"
+version = "3.3.1"
+
+[package.dependencies]
+appdirs = ">=1.4.0"
+attrs = ">=17.2.0"
+cached-property = ">=1.3.0"
+defusedxml = ">=0.4.1"
+isodate = ">=0.5.4"
+lxml = ">=3.1.0"
+pytz = "*"
+requests = ">=2.7.0"
+requests-toolbelt = ">=0.7.1"
+six = ">=1.9.0"
+
+[metadata]
+content-hash = "950991f1f44313d999f9507b474778d64f083808da6010fa2a336eb69ce88374"
+python-versions = "^3.7"
+
+[metadata.hashes]
+allegro-pl-rest-api = ["abb9cea276fd423789432b8f9f2f6d4acfa31d951a75ec3e7ef0e8546e9b01f1", "d3b1ba6b8e52f035ef509238c0b7dbec3f47d8e6ffca78a63e504e2b54d627f4"]
+appdirs = ["9e5896d1372858f8dd3344faf4e5014d21849c756c8d5701f78f8a103b372d92", "d8b24664561d0d34ddfaec54636d502d7cea6e29c3eaf68f3df6180863e2166e"]
+attrs = ["69c0dbf2ed392de1cb5ec704444b08a5ef81680a61cb899dc08127123af36a79", "f0b870f674851ecbfbbbd364d6b5cbdff9dcedbc7f3f5e18a6891057f21fe399"]
+"backports.functools-lru-cache" = ["9d98697f088eb1b0fa451391f91afb5e3ebde16bbdb272819fd091151fda4f1a", "f0b0e4eba956de51238e17573b7087e852dfe9854afd2e9c873f73fc0ca0a6dd"]
+cached-property = ["3a026f1a54135677e7da5ce819b0c690f156f37976f3e30c5430740725203d7f", "9217a59f14a5682da7c4b8829deadbfc194ac22e9908ccf7c8820234e80a1504"]
+certifi = ["59b7658e26ca9c7339e00f8f4636cdfe59d34fa37b9b04f6f9e9926b3cece1a5", "b26104d6835d1f5e49452a26eb2ff87fe7090b89dfcaee5ea2212697e1e1d7ae"]
+chardet = ["84ab92ed1c4d4f16916e05906b6b75a6c0fb5db821cc65e70cbd64a3e2a5eaae", "fc323ffcaeaed0e0a02bf4d117757b98aed530d9ed4531e3e15460124c106691"]
+cheroot = ["beb8eb9eeff5746059607e81b72efd6f4ca099111dc13f8961ae9e4f63f7786b", "c52f8df52c461351b91ce9a7769208c064bae74bd61b531312ffc62bff667650"]
+cherrypy = ["4dd2f59b5af93bd9ca85f1ed0bb8295cd0f5a8ee2b84d476374d4e070aa5c615", "626e305bca3c5d56a16e5f7d64bc8a4e25d26c41be1779f585fad2608edbc4c8"]
+defusedxml = ["24d7f2f94f7f3cb6061acb215685e5125fbcdc40a857eff9de22518820b0a4f4", "702a91ade2968a82beb0db1e0766a6a273f33d4616a6ce8cde475d8e09853b20"]
+idna = ["c357b3f628cf53ae2c4c05627ecc484553142ca23264e593d327bcde5e9c3407", "ea8b7f6188e6fa117537c3df7da9fc686d485087abf6ac197f9c46432f7e4a3c"]
+isodate = ["2e364a3d5759479cdb2d37cce6b9376ea504db2ff90252a2e5b7cc89cc9ff2d8", "aa4d33c06640f5352aca96e4b81afd8ab3b47337cc12089822d6f322ac772c81"]
+"jaraco.functools" = ["35ba944f52b1a7beee8843a5aa6752d1d5b79893eeb7770ea98be6b637bf9345", "e9e377644cee5f6f9128b4dab1631fca74981236e95a255f80e4292bcd2b5284"]
+lxml = ["0358b9e9642bc7d39aac5cffe9884a99a5ca68e5e2c1b89e570ed60da9139908", "091a359c4dafebbecd3959d9013f1b896b5371859165e4e50b01607a98d9e3e2", "1998e4e60603c64bcc35af61b4331ab3af087457900d3980e18d190e17c3a697", "2000b4088dee9a41f459fddaf6609bba48a435ce6374bb254c5ccdaa8928c5ba", "2afb0064780d8aaf165875be5898c1866766e56175714fa5f9d055433e92d41d", "2d8f1d9334a4e3ff176d096c14ded3100547d73440683567d85b8842a53180bb", "2e38db22f6a3199fd63675e1b4bd795d676d906869047398f29f38ca55cb453a", "3181f84649c1a1ca62b19ddf28436b1b2cb05ae6c7d2628f33872e713994c364", "37462170dfd88af8431d04de6b236e6e9c06cda71e2ca26d88ef2332fd2a5237", "3a9d8521c89bf6f2a929c3d12ad3ad7392c774c327ea809fd08a13be6b3bc05f", "3d0bbd2e1a28b4429f24fd63a122a450ce9edb7a8063d070790092d7343a1aa4", "483d60585ce3ee71929cea70949059f83850fa5e12deb9c094ed1c8c2ec73cbd", "4888be27d5cba55ce94209baef5bcd7bbd7314a3d17021a5fc10000b3a5f737d", "64b0d62e4209170a2a0c404c446ab83b941a0003e96604d2e4f4cb735f8a2254", "68010900898fdf139ac08549c4dba8206c584070a960ffc530aebf0c6f2794ef", "872ecb066de602a0099db98bd9e57f4cfc1d62f6093d94460c787737aa08f39e", "88a32b03f2e4cd0e63f154cac76724709f40b3fc2f30139eb5d6f900521b44ed", "b1dc7683da4e67ab2bebf266afa68098d681ae02ce570f0d1117312273d2b2ac", "b29e27ce9371810250cb1528a771d047a9c7b0f79630dc7dc5815ff828f4273b", "ce197559596370d985f1ce6b7051b52126849d8159040293bf8b98cb2b3e1f78", "d45cf6daaf22584eff2175f48f82c4aa24d8e72a44913c5aff801819bb73d11f", "e2ff9496322b2ce947ba4a7a5eb048158de9d6f3fe9efce29f1e8dd6878561e6", "f7b979518ec1f294a41a707c007d54d0f3b3e1fd15d5b26b7e99b62b10d9a72e", "f9c7268e9d16e34e50f8246c4f24cf7353764affd2bc971f0379514c246e3f6b", "f9c839806089d79de588ee1dde2dae05dc1156d3355dfeb2b51fde84d9c960ad", "ff962953e2389226adc4d355e34a98b0b800984399153c6678f2367b11b4d4b8"]
+mattes-allegro-pl = []
+more-itertools = ["0125e8f60e9e031347105eb1682cef932f5e97d7b9a1a28d9bf00c22a5daef40", "590044e3942351a1bdb1de960b739ff4ce277960f2425ad4509446dbace8d9d1"]
+oauthlib = ["0ce32c5d989a1827e3f1148f98b9085ed2370fc939bf524c9c851d8714797298", "3e1e14f6cde7e5475128d30e97edc3bfb4dc857cb884d8714ec161fdbb3b358e"]
+portend = ["b7ce7d35ea262415297cbfea86226513e77b9ee5f631d3baa11992d663963719", "f5c99a1aa1655733736bb0283fee6a1e115e18db500332bec8e24c43f320d8e8"]
+python-dateutil = ["7e6584c74aeed623791615e26efd690f29817a27c73085b78e4bad02493df2fb", "c89805f6f4d64db21ed966fda138f8a5ed7a4fdbc1a8ee329ce1b74e3c74da9e"]
+pytz = ["32b0891edff07e28efe91284ed9c31e123d84bea3fd98e1f72be2508f43ef8d9", "d5f05e487007e29e03409f9398d074e158d920d36eb82eaf66fb1136b0c5374c"]
+pywin32 = ["22e218832a54ed206452c8f3ca9eff07ef327f8e597569a4c2828be5eaa09a77", "32b37abafbfeddb0fe718008d6aada5a71efa2874f068bee1f9e703983dcc49a", "35451edb44162d2f603b5b18bd427bc88fcbc74849eaa7a7e7cfe0f507e5c0c8", "4eda2e1e50faa706ff8226195b84fbcbd542b08c842a9b15e303589f85bfb41c", "5f265d72588806e134c8e1ede8561739071626ea4cc25c12d526aa7b82416ae5", "6852ceac5fdd7a146b570655c37d9eacd520ed1eaeec051ff41c6fc94243d8bf", "6dbc4219fe45ece6a0cc6baafe0105604fdee551b5e876dc475d3955b77190ec", "9bd07746ce7f2198021a9fa187fa80df7b221ec5e4c234ab6f00ea355a3baf99"]
+pyyaml = ["1adecc22f88d38052fb787d959f003811ca858b799590a5eaa70e63dca50308c", "436bc774ecf7c103814098159fbb84c2715d25980175292c648f2da143909f95", "460a5a4248763f6f37ea225d19d5c205677d8d525f6a83357ca622ed541830c2", "5a22a9c84653debfbf198d02fe592c176ea548cccce47553f35f466e15cf2fd4", "7a5d3f26b89d688db27822343dfa25c599627bc92093e788956372285c6298ad", "9372b04a02080752d9e6f990179a4ab840227c6e2ce15b95e1278456664cf2ba", "a5dcbebee834eaddf3fa7366316b880ff4062e4bcc9787b78c7fbb4a26ff2dd1", "aee5bab92a176e7cd034e57f46e9df9a9862a71f8f37cad167c6fc74c65f5b4e", "c51f642898c0bacd335fc119da60baae0824f2cde95b0330b56c0553439f0673", "c68ea4d3ba1705da1e0d85da6684ac657912679a649e8868bd850d2c299cce13", "e23d0cc5299223dcc37885dae624f382297717e459ea24053709675a976a3e19"]
+requests = ["502a824f31acdacb3a35b6690b5fbf0bc41d63a24a45c4004352b0242707598e", "7bf2a778576d825600030a110f3c0e3e8edc51dfaafe1c146e39a2027784957b"]
+requests-oauthlib = ["bd6533330e8748e94bf0b214775fed487d309b8b8fe823dc45641ebcd9a32f57", "d3ed0c8f2e3bbc6b344fa63d6f933745ab394469da38db16bdddb461c7e25140", "dd5a0499abfefd087c6dd96693cbd5bfd28aa009719a7f85ab3fabe3956ef19a"]
+requests-toolbelt = ["380606e1d10dc85c3bd47bf5a6095f815ec007be7a8b69c878507068df059e6f", "968089d4584ad4ad7c171454f0a5c6dac23971e9472521ea3b6d49d610aa6fc0"]
+six = ["3350809f0555b11f552448330d0b52d5f24c91a322ea4a15ef22629740f3761c", "d16a0141ec1a18405cd4ce8b4613101da75da0e9a7aec5bdd4fa804d0e0eba73"]
+tempora = ["4951da790bd369f718dbe2287adbdc289dc2575a09278e77fad6131bcfe93097", "f8abbbd486eca3340bd3d242417b203c861d4e113ef778cd5fb9535b2b32ae54"]
+tenacity = ["24b7f302a1caa1801e58b39ea557129c095966e64e5b1ddad3c93a6cb033e38b", "a04b97b3bda047f912a75d110dde3e746891b5548b6bec6d157cd100f2d4afac"]
+urllib3 = ["61bf29cada3fc2fbefad4fdf059ea4bd1b4a86d2b6d15e1c7c0b582b9752fe39", "de9529817c93f27c8ccbfead6985011db27bd0ddfcdb2d86f3f663385c6a9c22"]
+"zc.lockfile" = ["95a8e3846937ab2991b61703d6e0251d5abb9604e18412e2714e1b90db173253"]
+zeep = ["d430114d5dd804539c2a32b573d6252f7c8a84c2e2f80422133e837adc8fab51", "f58328e36264a2fda2484dd20bb1695f4102a9cc918178d60c4d7cf8339c65d0"]
