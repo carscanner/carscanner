@@ -288,6 +288,22 @@ six = ">=1.9.0"
 
 [[package]]
 category = "main"
+description = "TinyDB is a tiny, document oriented database optimized for your happiness :)"
+name = "tinydb"
+optional = false
+python-versions = "*"
+version = "3.13.0"
+
+[[package]]
+category = "main"
+description = "Ultra fast JSON encoder and decoder for Python"
+name = "ujson"
+optional = false
+python-versions = "*"
+version = "1.35"
+
+[[package]]
+category = "main"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 name = "urllib3"
 optional = false
@@ -326,7 +342,7 @@ requests-toolbelt = ">=0.7.1"
 six = ">=1.9.0"
 
 [metadata]
-content-hash = "950991f1f44313d999f9507b474778d64f083808da6010fa2a336eb69ce88374"
+content-hash = "39ea95138a0e4044097d923c0e234b93565939edf5d372f63d76f6f8c382c4ed"
 python-versions = "^3.7"
 
 [metadata.hashes]
@@ -358,6 +374,8 @@ requests-toolbelt = ["380606e1d10dc85c3bd47bf5a6095f815ec007be7a8b69c878507068df
 six = ["3350809f0555b11f552448330d0b52d5f24c91a322ea4a15ef22629740f3761c", "d16a0141ec1a18405cd4ce8b4613101da75da0e9a7aec5bdd4fa804d0e0eba73"]
 tempora = ["4951da790bd369f718dbe2287adbdc289dc2575a09278e77fad6131bcfe93097", "f8abbbd486eca3340bd3d242417b203c861d4e113ef778cd5fb9535b2b32ae54"]
 tenacity = ["24b7f302a1caa1801e58b39ea557129c095966e64e5b1ddad3c93a6cb033e38b", "a04b97b3bda047f912a75d110dde3e746891b5548b6bec6d157cd100f2d4afac"]
+tinydb = ["260b1f69168a24518af63f0270c72dc026476607016a0105aef6a966d8d2fbdc", "a05c4c81e6e867c4f8a2e51c5236d0d897019aa5e9296f5947455b0bdd3c519d"]
+ujson = ["f66073e5506e91d204ab0c614a148d5aa938bdbf104751be66f8ad7a222f5f86"]
 urllib3 = ["61bf29cada3fc2fbefad4fdf059ea4bd1b4a86d2b6d15e1c7c0b582b9752fe39", "de9529817c93f27c8ccbfead6985011db27bd0ddfcdb2d86f3f663385c6a9c22"]
 "zc.lockfile" = ["95a8e3846937ab2991b61703d6e0251d5abb9604e18412e2714e1b90db173253"]
 zeep = ["d430114d5dd804539c2a32b573d6252f7c8a84c2e2f80422133e837adc8fab51", "f58328e36264a2fda2484dd20bb1695f4102a9cc918178d60c4d7cf8339c65d0"]

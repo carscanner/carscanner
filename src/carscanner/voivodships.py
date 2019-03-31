@@ -1,8 +1,16 @@
+import logging
+import os
+import pickle
+
+import tinydb
+
 import carscanner
 import carscanner.allegro
-import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _state_id(elem): return elem.stateId
 
 
 def get_voivodships():
@@ -14,19 +22,27 @@ def get_voivodships():
         return webapi_client.service.doGetStatesInfo(*args, **kwargs)
 
     states = get_states_info(1, client.oauth.client_id)
-    states_arr = []
 
-    def state_id(elem): return elem.stateId
+    # carscanner.dump_file(states, os.path.expanduser('~/.allegro/data/voivodeship.pickle'))
 
-    for v in sorted(states, key=state_id):
-        logger.debug(v.stateId)
-        states_arr.append(v.stateName)
+    _store(states)
 
-    with open('states.yml', 'wt') as f:
-        import yaml
-        yaml.safe_dump({'states': states_arr}, f)
+
+def pickle_to_tinydb():
+    with open(os.path.expanduser('~/.allegro/data/voivodeship.pickle'), 'br') as f:
+        voivodeships = pickle.load(f)
+        _store(voivodeships)
+
+
+def _store(voivodeships) -> None:
+    with tinydb.TinyDB(os.path.expanduser('~/.allegro/data/static.json'), indent=2) as db:
+        tbl = db.table('voivodeship')
+        db.purge_table('voivodeship')
+        for v in sorted(voivodeships, key=_state_id):
+            tbl.insert({'id': v.stateId, 'name': v.stateName})
 
 
 if __name__ == '__main__':
     carscanner.configure_logging()
     get_voivodships()
+    # pickle_to_tinydb()

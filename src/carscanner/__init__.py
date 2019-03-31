@@ -1,25 +1,24 @@
 import logging
-
-if __name__ == '__main__':
-    from carscanner.main import main as main_func
-
-    main_func()
+import typing
 
 
-def dump_file(data: dict, path: str) -> None:
+def dump_file(data: typing.Any, path: str) -> None:
     if path.endswith('.yml') or path.endswith('.yaml'):
         import yaml
         dump_f = yaml.safe_dump
+        mode = 'wt'
     elif path.endswith('.json'):
         import json
         dump_f = json.dump
+        mode = 'wt'
     elif path.endswith('.pickle'):
         import pickle
         dump_f = pickle.dump
+        mode = 'wb'
     else:
         raise ValueError(path)
 
-    with open(path, 'wt') as f:
+    with open(path, mode) as f:
         dump_f(data, f)
 
 
