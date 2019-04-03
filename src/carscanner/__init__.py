@@ -1,8 +1,12 @@
 import logging
 import typing
 
+log = logging.getLogger(__name__)
+
 
 def dump_file(data: typing.Any, path: str) -> None:
+    log.debug('dumping %s to %s', type(data), path)
+
     if path.endswith('.yml') or path.endswith('.yaml'):
         import yaml
         dump_f = yaml.safe_dump
@@ -12,8 +16,10 @@ def dump_file(data: typing.Any, path: str) -> None:
         dump_f = json.dump
         mode = 'wt'
     elif path.endswith('.pickle'):
-        import pickle
-        dump_f = pickle.dump
+        def dump_f(data, stream):
+            import pickle
+            pickle.dump(data, stream, protocol=pickle.HIGHEST_PROTOCOL)
+
         mode = 'wb'
     else:
         raise ValueError(path)
