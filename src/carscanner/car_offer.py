@@ -7,8 +7,8 @@ from decimal import Decimal
 import allegro_api
 import zeep.xsd
 
-from carscanner.allegro.dao import VoivodeshipDao
-from carscanner.make_model import CarMakeModelDao, derive_model
+from carscanner.dao import CarMakeModelDao, VoivodeshipDao
+from carscanner.make_model import derive_model
 
 log = logging.getLogger(__name__)
 

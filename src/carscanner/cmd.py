@@ -1,8 +1,9 @@
 import argparse
 
 import carscanner.allegro
+import carscanner.criteria
+import carscanner.make_model
 from carscanner.allegro.auth import InsecureTokenStore, AuthorizationCodeAuth, TravisTokenStore
-from carscanner.make_model import load_car_list
 
 
 class CommandLine:
@@ -23,8 +24,14 @@ class CommandLine:
         token_fetch_opt.set_defaults(func=self.token_fetch)
 
         car_list_opt = subparser.add_parser('carlist')
-        car_list_opt.set_defaults(func=self.load_car_list)
+        car_list_opt.set_defaults(func=carscanner.make_model.carlist_cmd)
         car_list_opt.add_argument('path', help='Input json file', metavar='path')
+
+        criteria_parser = subparser.add_parser('criteria')
+        criteria_subparsers = criteria_parser.add_subparsers()
+
+        criteria_build_opt = criteria_subparsers.add_parser('build')
+        criteria_build_opt.set_defaults(func=carscanner.criteria.criteria_build_cmd)
 
         args = parser.parse_args()
         args.func(**vars(args))
@@ -44,10 +51,6 @@ class CommandLine:
 
     def token_fetch(self, format, **_):
         self._get_oauth(format).fetch_token()
-
-    def load_car_list(self, path, **_):
-        load_car_list(path)
-
 
 if __name__ == '__main__':
     carscanner.configure_logging()

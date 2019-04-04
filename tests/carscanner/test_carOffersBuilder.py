@@ -6,10 +6,8 @@ from unittest import TestCase
 import tinydb
 import zeep
 
-from carscanner.make_model import CarMakeModelDao
-
-from carscanner.allegro.dao import VoivodeshipDao
-from carscanner.allegro.offer import CarOffersBuilder, CarOfferBuilder
+from carscanner.allegro.car_offer import CarOffersBuilder, CarOfferBuilder
+from carscanner.dao import VoivodeshipDao, CarMakeModelDao
 
 
 class TestCarOffersBuilder(TestCase):

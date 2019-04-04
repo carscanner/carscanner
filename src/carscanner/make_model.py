@@ -5,7 +5,7 @@ from os.path import expanduser as xu
 from tinydb import TinyDB
 from unidecode import unidecode
 
-from carscanner.allegro.dao.car_make_model import CarMakeModelDao
+from carscanner.dao import CarMakeModelDao
 
 
 def derive_model(car_make_model: CarMakeModelDao, make: str, name: str, description: str) -> typing.Optional[str]:
@@ -37,3 +37,7 @@ def load_car_list(path: str):
             make = unidecode(item['brand'].lower())
             models = [unidecode(model).lower() for model in item['models']]
             dao.insert({'make': make, 'models': models})
+
+
+def carlist_cmd(path, **_):
+    load_car_list(path)

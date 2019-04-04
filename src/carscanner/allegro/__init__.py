@@ -2,6 +2,7 @@ import os
 
 import allegro_pl
 
+import carscanner.allegro.service
 from .auth import AuthorizationCodeAuth, InsecureTokenStore, get_codes
 
 
@@ -25,8 +26,12 @@ def get_client() -> allegro_pl.Allegro:
     client_secret = os.environ.get('ALLEGRO_CLIENT_SECRET')
     if not client_id and not client_secret:
         codes = get_codes()
-        if client_id is None: client_id = codes['client_id']
-        if client_secret is None: client_secret = codes['client_secret']
+        if client_id is None: client_id = codes.get('client_id')
+        if client_secret is None: client_secret = codes.get('client_secret')
 
     auth = AuthorizationCodeAuth(client_id, client_secret, InsecureTokenStore(token_path))
-    return allegro_pl.Allegro(auth)
+    client = allegro_pl.Allegro(auth)
+
+    carscanner.allegro.service.init_service_methods(client)
+
+    return client
