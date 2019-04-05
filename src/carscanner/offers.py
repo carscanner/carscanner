@@ -1,4 +1,5 @@
 import logging
+import time
 import typing
 from os.path import expanduser as xu
 
@@ -59,6 +60,17 @@ class OfferService:
         self.car_offer_dao.insert_multiple([builder.c for builder in items.values()])
 
 
+def _update_meta(db):
+    tbl = db.table(db.DEFAULT_TABLE)
+    meta = tbl.get()
+    if meta is None:
+        meta = {}
+    meta['timestamp'] = int(time.time())
+    import socket
+    meta['host'] = socket.gethostbyname()
+    tbl.update(meta)
+
+
 if __name__ == '__main__':
     carscanner.configure_logging()
 
@@ -66,6 +78,8 @@ if __name__ == '__main__':
 
     with TinyDB(xu('~/.allegro/data/static.json'), indent=2) as static_db, TinyDB(xu('~/.allegro/data/cars.json'),
                                                                                   indent=2) as db:
+        _update_meta(db)
+
         criteria_dao = CriteriaDao(static_db)
         voivodeship_dao = VoivodeshipDao(static_db)
         car_make_mode_dao = CarMakeModelDao(static_db)

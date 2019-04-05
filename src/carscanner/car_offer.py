@@ -62,7 +62,7 @@ class CarOfferBuilder:
 
         car.location = o.itLocation
         car.voivodeship = self._voivodeship_dao.get_name_by_id(o.itState)
-        if car.model is None:
+        if car.make is not None and car.model is None:
             car.model = self._derive_car_model(o)
 
     def _update_from_item_info_attributes(self, o: typing.List[zeep.xsd.CompoundValue]):
