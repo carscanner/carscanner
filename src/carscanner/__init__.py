@@ -1,12 +1,9 @@
 import logging
-import typing
 
-log = logging.getLogger(__name__)
+from .car_offer import CarOffer, CarOffersBuilder, CarOfferBuilder
 
 
-def dump_file(data: typing.Any, path: str) -> None:
-    log.debug('dumping %s to %s', type(data), path)
-
+def dump_file(data, path: str) -> None:
     if path.endswith('.yml') or path.endswith('.yaml'):
         import yaml
         dump_f = yaml.safe_dump
@@ -35,3 +32,21 @@ def configure_logging() -> None:
         log = logging.getLogger(name)
         log.setLevel(logging.DEBUG)
         log.addHandler(handler)
+
+
+def webapi_dump(obj):
+    import zeep.xsd
+
+    if isinstance(obj, list):
+        return [webapi_dump(x) for x in obj]
+    elif isinstance(obj, (dict, zeep.xsd.CompoundValue)):
+        return {k: webapi_dump(v) for k, v in obj}
+    else:
+        return obj
+
+
+def chunks(l, n):
+    # For item i in a range that is a length of l,
+    for i in range(0, len(l), n):
+        # Create an index range for l of n items:
+        yield l[i:i + n]

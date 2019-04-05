@@ -1,41 +1,14 @@
-import datetime
 import logging
 import typing
-from dataclasses import dataclass
 from decimal import Decimal
 
 import allegro_api
 import zeep.xsd
 
-from carscanner.dao import CarMakeModelDao, VoivodeshipDao
+from carscanner.dao import CarMakeModelDao, CarOffer, VoivodeshipDao
 from carscanner.make_model import derive_model
 
 log = logging.getLogger(__name__)
-
-
-@dataclass
-class CarOffer:
-    id: int = None
-    make: str = None
-    model: str = None
-    year: int = None
-    mileage: int = None
-    image: str = None
-    url: str = None
-    name: str = None
-    price: Decimal = None
-    first_spotted: datetime.date = datetime.date.today()
-    voivodeship: str = None
-    location: str = None
-    imported: bool = None
-
-    def to_dict(self):
-        return self.__dict__
-
-    @classmethod
-    def from_dict(cls, d):
-        return cls(**d)
-
 
 _KEY_YEAR = 'Rok produkcji'
 _KEY_MILEAGE = 'Przebieg'
@@ -61,11 +34,27 @@ class CarOfferBuilder:
 
     def update_from_item_info_struct(self, o: zeep.xsd.valueobjects.CompoundValue):
         try:
+            self._update_from_item_cats(o.itemCats.item)
             self._update_from_item_info_attributes(o.itemAttribs.item)
             self._update_from_item_info(o.itemInfo)
-            self._update_from_item_img_list(o.itemImages.item)
+            self._update_from_item_imgages(o.itemImages.item)
         except ValueError as x:
             raise ValueError(self.c.id, *x.args)
+
+    def _update_from_item_cats(self, cats: list):
+        cat_names = [cat.catName for cat in cats]
+        if 'Osobowe' in cat_names and 'Osobowe' != cat_names[-1]:
+            idx = cat_names.index('Osobowe')
+            if len(cat_names) <= idx + 1:
+                return
+            make = cat_names[idx + 1]
+            if make != 'Inne':
+                self.c.make = make
+                if len(cat_names) <= idx + 2:
+                    return
+                model = cat_names[idx + 2]
+                if model != 'Inne':
+                    self.c.model = model
 
     def _update_from_item_info(self, o: zeep.xsd.valueobjects.CompoundValue):
         car = self.c
@@ -73,7 +62,8 @@ class CarOfferBuilder:
 
         car.location = o.itLocation
         car.voivodeship = self._voivodeship_dao.get_name_by_id(o.itState)
-        car.model = self._derive_car_model(o)
+        if car.model is None:
+            car.model = self._derive_car_model(o)
 
     def _update_from_item_info_attributes(self, o: typing.List[zeep.xsd.CompoundValue]):
         d = CarOfferBuilder._attrib_list_to_dict(o)
@@ -86,7 +76,7 @@ class CarOfferBuilder:
         if _KEY_MAKE in d:
             self.c.make = d[_KEY_MAKE][0]
 
-    def _update_from_item_img_list(self, o: typing.List[zeep.xsd.CompoundValue]):
+    def _update_from_item_imgages(self, o: typing.List[zeep.xsd.CompoundValue]):
         self.c.image = self._get_image(o, 2)
 
     @staticmethod
@@ -110,6 +100,5 @@ class CarOffersBuilder:
         self._voivodeship_dao = voivodeship_dao
         self._car_make_model = car_make_model
 
-    def to_car_offers(self, offers: allegro_api.models.ListingResponseOffers) -> typing.List[CarOfferBuilder]:
-        return [CarOfferBuilder(i, self._voivodeship_dao, self._car_make_model) for i in
-                offers.promoted + offers.regular]
+    def to_car_offers(self, offers: typing.List[allegro_api.models.ListingOffer]) -> typing.Dict[int, CarOfferBuilder]:
+        return {i.id: CarOfferBuilder(i, self._voivodeship_dao, self._car_make_model) for i in offers}

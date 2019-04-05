@@ -1,7 +1,9 @@
 import allegro_pl
+from tinydb import TinyDB
 
 import carscanner.allegro
-from tinydb import TinyDB
+from carscanner.dao.criteria import CriteriaDao, Criteria
+
 
 class GetCategories:
     def __init__(self, allegro: allegro_pl.Allegro):
@@ -66,9 +68,9 @@ def dump_categories():
     result = get_categories()
     from os.path import expanduser as xu
     with TinyDB(xu('~/.allegro/data/static.json'), indent=2) as db:
-        db.purge_table('criteria')
-        tbl = db.table('criteria')
-        tbl.insert_multiple(result)
+        dao = CriteriaDao(db)
+        dao.purge()
+        dao.insert_multiple([Criteria(cat['category_id']) for cat in result])
 
 
 def print_categories():
