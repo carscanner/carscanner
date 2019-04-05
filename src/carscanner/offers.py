@@ -46,7 +46,7 @@ class OfferService:
             car_offers = self.car_offers_builder.to_car_offers(items)
             self._get_items_info(car_offers)
 
-    def _get_items_info(self, items: typing.Dict[int, CarOfferBuilder]):
+    def _get_items_info(self, items: typing.Dict[str, CarOfferBuilder]):
         offer_ids = list(items.keys())
         for chunk in chunks(offer_ids, self._allegro.get_items_info.items_limit):
 

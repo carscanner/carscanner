@@ -100,5 +100,5 @@ class CarOffersBuilder:
         self._voivodeship_dao = voivodeship_dao
         self._car_make_model = car_make_model
 
-    def to_car_offers(self, offers: typing.List[allegro_api.models.ListingOffer]) -> typing.Dict[int, CarOfferBuilder]:
+    def to_car_offers(self, offers: typing.List[allegro_api.models.ListingOffer]) -> typing.Dict[str, CarOfferBuilder]:
         return {i.id: CarOfferBuilder(i, self._voivodeship_dao, self._car_make_model) for i in offers}
