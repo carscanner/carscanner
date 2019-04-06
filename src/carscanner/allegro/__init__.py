@@ -29,6 +29,7 @@ class CarscannerAllegro(allegro_pl.Allegro):
         webapi_client = self.webapi_client()
         cat_service = allegro_api.api.CategoriesAndParametersApi(rest_client)
         public_offer_service = allegro_api.api.PublicOfferInformationApi(rest_client)
+        cat_api = allegro_api.api.CategoriesAndParametersApi(rest_client)
 
         @self.retry
         def get_categories(**kwargs):
@@ -54,16 +55,24 @@ class CarscannerAllegro(allegro_pl.Allegro):
             return webapi_client.service.doGetItemsInfo(**kwargs)
 
         self.get_items_info = get_items_info
-
         self.get_items_info.items_limit = 10
 
-    def get_categories(self, **kwags):
+        @self.retry
+        def get_category_parameters(category_id: str, **kwargs) -> allegro_api.models.CategoryParameterList:
+            return cat_api.get_flat_parameters_using_get2(category_id, **kwargs)
+
+        self.get_category_parameters = get_category_parameters
+
+    def get_categories(self, **kwags) -> allegro_api.models.CategoriesDto:
         pass
 
     def get_listing(self, search_params: dict) -> allegro_api.models.ListingResponse:
         pass
 
     def get_items_info(self, **kwargs):
+        pass
+
+    def get_category_parameters(self, category_id: str, **kwargs) -> allegro_api.models.CategoryParameterList:
         pass
 
 
