@@ -64,11 +64,18 @@ def _update_meta(db):
     tbl = db.table(db.DEFAULT_TABLE)
     meta = tbl.get()
     if meta is None:
+        new = True
         meta = {}
+    else:
+        new = False
+    import time
     meta['timestamp'] = int(time.time())
-    import socket
-    meta['host'] = socket.gethostbyname()
-    tbl.update(meta)
+    import platform
+    meta['host'] = platform.node()
+    if new:
+        tbl.insert(meta)
+    else:
+        tbl.update(meta)
 
 
 if __name__ == '__main__':
