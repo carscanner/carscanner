@@ -1,39 +1,46 @@
 import logging
-import time
 import typing
-from os.path import expanduser as xu
 
 import allegro_api.api
+import tinydb
 import zeep
-from tinydb import TinyDB
 
 import carscanner.allegro
 from carscanner import chunks, CarOffersBuilder, CarOfferBuilder
 from carscanner.allegro import CarscannerAllegro as Allegro
-from carscanner.dao import CriteriaDao, CarMakeModelDao, VoivodeshipDao, CarOfferDao
+from carscanner.dao import CriteriaDao, CarMakeModelDao, VoivodeshipDao, CarOfferDao, FilterDao
+from carscanner.filter import FilterService
 
 logger = logging.getLogger(__name__)
 
 
 class OfferService:
-    def __init__(self, allegro: Allegro, criteria_dao, car_offers_builder: CarOffersBuilder, car_offer_dao):
+    def __init__(self, allegro: Allegro, criteria_dao, car_offers_builder: CarOffersBuilder, car_offer_dao,
+                 filter_service):
         self._allegro = allegro
 
         self.criteria_dao = criteria_dao
         self.car_offers_builder = car_offers_builder
         self.car_offer_dao: CarOfferDao = car_offer_dao
+        self.filter_service: FilterService = filter_service
 
     def _get_offers_for_criteria(self, crit: carscanner.dao.Criteria) -> typing.List[
         allegro_api.models.ListingOffer]:
-        data: allegro_api.models.ListingResponse = self._allegro.get_listing(
-            {'category.id': crit.category_id, 'fallback': False,
-             # 'include': ['-all', 'items', 'searchMeta'],
-             'parameter.215882': 272070,  # oferta dotyczy sprzedaży
-             'parameter.11323': 2,  # stan = używane
-             'startingTime': 'P2D',  # ostatnie 2 dni
-             'parameter.178': '1',  # uszkodzone = nie
-             'limit': 100}
-        )
+        search_params = {
+            'category.id': crit.category_id,
+            'fallback': False,
+            'include': ['-all', 'items'],
+            # 'limit': 100
+        }
+        criteria = {
+            'Oferta dotyczy': 'sprzedaż',
+            'Stan': "używane",
+            'wystawione w ciągu': "2 dni",
+            "Uszkodzony": "Nie"
+        }
+
+        search_params.update(self.filter_service.transform_filters(crit.category_id, criteria))
+        data: allegro_api.models.ListingResponse = self._allegro.get_listing(search_params)
 
         return data.items.promoted + data.items.regular
 
@@ -61,30 +68,29 @@ class OfferService:
 
 
 def _update_meta(db):
-    tbl = db.table(db.DEFAULT_TABLE)
-    meta = tbl.get()
-    if meta is None:
-        new = True
-        meta = {}
-    else:
-        new = False
     import time
-    meta['timestamp'] = int(time.time())
     import platform
-    meta['host'] = platform.node()
-    if new:
-        tbl.insert(meta)
-    else:
-        tbl.update(meta)
+    from tinydb import Query
+
+    tbl = db.table(db.DEFAULT_TABLE)
+    meta = {
+        'timestamp': int(time.time()),
+        'host': platform.node()
+    }
+    tbl.upsert(meta, Query().timestamp.exists())
 
 
 if __name__ == '__main__':
+    from os.path import expanduser as xu
+    from tinydb import TinyDB
+
     carscanner.configure_logging()
 
     client = carscanner.allegro.get_client()
 
-    with TinyDB(xu('~/.allegro/data/static.json'), indent=2) as static_db, TinyDB(xu('~/.allegro/data/cars.json'),
-                                                                                  indent=2) as db:
+    with TinyDB(xu('~/.allegro/data/static.json'), indent=2) as static_db, \
+            TinyDB(xu('~/.allegro/data/cars.json'), indent=2) as db, \
+            TinyDB(storage=tinydb.storages.MemoryStorage) as mem_db:
         _update_meta(db)
 
         criteria_dao = CriteriaDao(static_db)
@@ -92,6 +98,8 @@ if __name__ == '__main__':
         car_make_mode_dao = CarMakeModelDao(static_db)
         car_offers_builder = CarOffersBuilder(voivodeship_dao, car_make_mode_dao)
         car_offer_dao = CarOfferDao(db)
-        offer_service = OfferService(client, criteria_dao, car_offers_builder, car_offer_dao)
+        filter_service = FilterService(client, FilterDao(mem_db), criteria_dao)
+        offer_service = OfferService(client, criteria_dao, car_offers_builder, car_offer_dao, filter_service)
 
+        filter_service.load_parameters()
         offer_service.get_offers()
