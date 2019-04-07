@@ -4,7 +4,7 @@ description = "Allegro REST API"
 name = "allegro-pl-rest-api"
 optional = false
 python-versions = "*"
-version = "2019.2"
+version = "2019.3"
 
 [package.dependencies]
 certifi = "*"
@@ -162,7 +162,7 @@ description = ""
 name = "mattes-allegro-pl"
 optional = false
 python-versions = "^3.7"
-version = "0.3.0"
+version = "0.3.1"
 
 [package.dependencies]
 allegro-pl-rest-api = "^2019.0"
@@ -202,11 +202,11 @@ version = "0.9.0"
 
 [[package]]
 category = "main"
-description = "TCP port monitoring utilities"
+description = "TCP port monitoring and discovery"
 name = "portend"
 optional = false
 python-versions = ">=2.7"
-version = "2.3"
+version = "2.4"
 
 [package.dependencies]
 tempora = ">=1.8"
@@ -409,7 +409,7 @@ requests-toolbelt = ">=0.7.1"
 six = ">=1.9.0"
 
 [metadata]
-content-hash = "1985c5a4d16ddfdd5142e4cfc5907f905ecf9f881a6148c22b56843b2674dda8"
+content-hash = "49179be0dda15bd1f9959127f7af49aeba91e190df3fc7febc21ae5bd249bc8d"
 python-versions = "^3.7"
 
 [metadata.hashes]
@@ -433,7 +433,7 @@ mattes-allegro-pl = []
 more-itertools = ["2112d2ca570bb7c3e53ea1a35cd5df42bb0fd10c45f0fb97178679c3c03d64c7", "c3e4748ba1aad8dba30a4886b0b1a2004f9a863837b8654e7059eebf727afa5a"]
 oauthlib = ["0ce32c5d989a1827e3f1148f98b9085ed2370fc939bf524c9c851d8714797298", "3e1e14f6cde7e5475128d30e97edc3bfb4dc857cb884d8714ec161fdbb3b358e"]
 pluggy = ["19ecf9ce9db2fce065a7a0586e07cfb4ac8614fe96edf628a264b1c70116cf8f", "84d306a647cc805219916e62aab89caa97a33a1dd8c342e87a37f91073cd4746"]
-portend = ["b7ce7d35ea262415297cbfea86226513e77b9ee5f631d3baa11992d663963719", "f5c99a1aa1655733736bb0283fee6a1e115e18db500332bec8e24c43f320d8e8"]
+portend = ["507e1f76eb6deec0cc15045d1140a07874f44d02eec021e8fd383557d99fe93d", "853d69e61d86aa1bc7a4976cb2f67efe1c92d3b41c47a5e6b8771d3c51b5bfd3"]
 py = ["64f65755aee5b381cea27766a3a147c3f15b9b6b9ac88676de66ba2ae36793fa", "dc639b046a6e2cff5bbe40194ad65936d6ba360b52b3c3fe1d08a82dd50b5e53"]
 pytest = ["13c5e9fb5ec5179995e9357111ab089af350d788cbc944c628f3cde72285809b", "f21d2f1fb8200830dcbb5d8ec466a9c9120e20d8b53c7585d180125cce1d297a"]
 python-dateutil = ["7e6584c74aeed623791615e26efd690f29817a27c73085b78e4bad02493df2fb", "c89805f6f4d64db21ed966fda138f8a5ed7a4fdbc1a8ee329ce1b74e3c74da9e"]
