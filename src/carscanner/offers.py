@@ -38,35 +38,42 @@ class OfferService:
         self.filter_service: FilterService = filter_service
         self.timestamp: datetime.datetime = ts
 
-    def _get_offers_for_criteria(self, crit: Criteria) -> typing.List[allegro_api.models.ListingOffer]:
+    def _get_offers_for_criteria(self, crit: Criteria) -> typing.Iterable[typing.List[allegro_api.models.ListingOffer]]:
+        offset = 0
+        while True:
+            data: allegro_api.models.ListingResponse = self._allegro.get_listing(self._search_params(crit, offset))
 
-        data: allegro_api.models.ListingResponse = self._allegro.get_listing(self._search_params(crit))
+            result = data.items.promoted + data.items.regular
 
-        logger.info('total %d, this run %d', data.search_meta.available_count,
-                    len(data.items.promoted) + len(data.items.regular))
-        return data.items.promoted + data.items.regular
+            logger.info('total %d, this run %d, offset', data.search_meta.available_count, len(result), offset)
+            yield result
 
-    def _search_params(self, crit: Criteria) -> dict:
+            offset += len(result)
+            if offset >= data.search_meta.available_count:
+                break
+
+    def _search_params(self, crit: Criteria, offset=0) -> dict:
         result = OfferService.search_params.copy()
         result.update(self.filter_service.transform_filters(crit.category_id, OfferService._filter_template))
         result['category.id'] = crit.category_id
+        result['offset'] = offset
 
         return result
 
     def get_offers(self):
         for crit in self.criteria_dao.all():
-            items = self._get_offers_for_criteria(crit)
-            item_ids = [item.id for item in items]
+            for items in self._get_offers_for_criteria(crit):
+                item_ids = [item.id for item in items]
 
-            existing = self.car_offer_dao.search_existing_ids(item_ids)
-            self.car_offer_dao.update_last_spotted(existing, self.timestamp)
+                existing = self.car_offer_dao.search_existing_ids(item_ids)
+                self.car_offer_dao.update_last_spotted(existing, self.timestamp)
 
-            # get non-existing ids
-            new_items = [item for item in items if item.id not in existing]
+                # get non-existing ids
+                new_items = [item for item in items if item.id not in existing]
 
-            # pull their details
-            car_offers = self.car_offers_builder.to_car_offers(new_items)
-            self._get_items_info(car_offers)
+                # pull their details
+                car_offers = self.car_offers_builder.to_car_offers(new_items)
+                self._get_items_info(car_offers)
 
     def _get_items_info(self, items: typing.Dict[str, CarOfferBuilder]):
         offer_ids = list(items.keys())
@@ -76,7 +83,6 @@ class OfferService:
                                                                              getImageUrl=1,
                                                                              getAttribs=1)
             for value in offer_ext.arrayItemListInfo.item:
-                logger.debug(value.itemInfo.itId)
                 items[str(value.itemInfo.itId)].update_from_item_info_struct(value)
 
         self.car_offer_dao.insert_multiple([builder.c for builder in items.values()])

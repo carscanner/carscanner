@@ -37,7 +37,8 @@ class CarOfferBuilder:
             self._update_from_item_cats(o.itemCats.item)
             self._update_from_item_info_attributes(o.itemAttribs.item)
             self._update_from_item_info(o.itemInfo)
-            self._update_from_item_imgages(o.itemImages.item)
+            if o.itemImages is not None:
+                self._update_from_item_imgages(o.itemImages.item)
         except ValueError as x:
             raise ValueError(self.c.id, *x.args)
 
@@ -61,7 +62,8 @@ class CarOfferBuilder:
         assert car.id == str(o.itId)
 
         car.location = o.itLocation
-        car.voivodeship = self._voivodeship_dao.get_name_by_id(o.itState)
+        if o.itState is not None and o.itState != 0:
+            car.voivodeship = self._voivodeship_dao.get_name_by_id(o.itState)
         if car.make is not None and car.model is None:
             car.model = self._derive_car_model(o)
 

@@ -1,19 +1,8 @@
 from dataclasses import dataclass
 
 import tinydb
-from tinydb import where
 
 from .base import BaseDao
-
-
-# @dataclass
-# class Voivodeship:
-#     id: int = None
-#     name: str = None
-#
-#     def load_dict(self, d: dict) -> None:
-#         self.id = d['id']
-#         self.name = d['name']
 
 
 class VoivodeshipDao(BaseDao):
@@ -26,4 +15,4 @@ class VoivodeshipDao(BaseDao):
         return self._tbl.insert(data)
 
     def get_name_by_id(self, id: int) -> str:
-        return self._tbl.get(where('id') == id)['name']
+        return self._tbl.get(tinydb.Query().id == id)['name']
