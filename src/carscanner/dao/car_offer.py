@@ -1,12 +1,18 @@
+import dataclasses
 import datetime
+import decimal
 import typing
-from dataclasses import dataclass
-from decimal import Decimal
 
 import tinydb
 
+from carscanner.utils import datetime_to_unix, unix_to_datetime
 
-@dataclass
+_K_PRICE = 'price'
+_K_FIRST_SPOTTED = 'first_spotted'
+_K_LAST_SPOTTED = 'last_spotted'
+
+
+@dataclasses.dataclass
 class CarOffer:
     id: int = None
     make: str = None
@@ -16,18 +22,30 @@ class CarOffer:
     image: str = None
     url: str = None
     name: str = None
-    price: Decimal = None
-    first_spotted: datetime.date = datetime.date.today()
+    price: decimal.Decimal = None
+    first_spotted: datetime.date = dataclasses.field(default_factory=datetime.datetime.utcnow)
+    last_spotted: datetime.date = dataclasses.field(default_factory=datetime.datetime.utcnow)
     voivodeship: str = None
     location: str = None
     imported: bool = None
 
     def to_dict(self):
-        return self.__dict__
+        result = self.__dict__
+        if self.price is not None:
+            result[_K_PRICE] = str(self.price)
+        result[_K_FIRST_SPOTTED] = datetime_to_unix(self.first_spotted)
+        result[_K_LAST_SPOTTED] = datetime_to_unix(self.last_spotted)
+
+        return result
 
     @classmethod
     def from_dict(cls, d: dict):
-        return cls(**d)
+        result = cls(**d)
+        result.first_spotted = unix_to_datetime(d[_K_FIRST_SPOTTED])
+        result.last_spotted = unix_to_datetime(d[_K_LAST_SPOTTED])
+        if result.price:
+            result.price = decimal.Decimal(d[_K_PRICE])
+        return result
 
 
 class CarOfferDao:
@@ -36,3 +54,12 @@ class CarOfferDao:
 
     def insert_multiple(self, car_offers: typing.List[CarOffer]) -> typing.List[int]:
         return self._tbl.insert_multiple([o.to_dict() for o in car_offers])
+
+    def _search_ids(self, cond) -> typing.List[str]:
+        return [d['id'] for d in self._tbl.search(cond)]
+
+    def search_existing_ids(self, ids: typing.List[str]) -> typing.List[str]:
+        return self._search_ids(tinydb.Query().id.one_of(ids))
+
+    def update_last_spotted(self, ids: typing.List[str], timestamp: datetime.datetime) -> typing.List[int]:
+        return self._tbl.update({_K_LAST_SPOTTED: timestamp}, tinydb.Query().id.one_of(ids))

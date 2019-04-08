@@ -27,10 +27,10 @@ class CarOfferBuilder:
 
     def _update_from_listing_model(self, model):
         car = self.c
-        car.id = int(model.id)
+        car.id = model.id
         car.name = model.name
         car.price = Decimal(model.selling_mode.price.amount)
-        car.url = 'https://allegro.pl/oferta/' + str(model.id)
+        car.url = 'https://allegro.pl/oferta/' + model.id
 
     def update_from_item_info_struct(self, o: zeep.xsd.valueobjects.CompoundValue):
         try:
@@ -58,7 +58,7 @@ class CarOfferBuilder:
 
     def _update_from_item_info(self, o: zeep.xsd.valueobjects.CompoundValue):
         car = self.c
-        assert car.id == o.itId
+        assert car.id == str(o.itId)
 
         car.location = o.itLocation
         car.voivodeship = self._voivodeship_dao.get_name_by_id(o.itState)
@@ -68,9 +68,9 @@ class CarOfferBuilder:
     def _update_from_item_info_attributes(self, o: typing.List[zeep.xsd.CompoundValue]):
         d = CarOfferBuilder._attrib_list_to_dict(o)
         if _KEY_YEAR in d:
-            self.c.year = d[_KEY_YEAR][0]
+            self.c.year = int(d[_KEY_YEAR][0])
         if _KEY_MILEAGE in d:
-            self.c.mileage = d[_KEY_MILEAGE][0]
+            self.c.mileage = int(d[_KEY_MILEAGE][0])
         if _KEY_ORIGIN in d:
             self.c.imported = d[_KEY_ORIGIN][0] == 'import'
         if _KEY_MAKE in d:

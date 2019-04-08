@@ -28,9 +28,13 @@ def dump_file(data, path: str) -> None:
 def configure_logging() -> None:
     handler = logging.StreamHandler()
     handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
-    for name in list(['carscanner', 'allegro_pl', '__main__']):
+    for name, level in {'carscanner': logging.DEBUG,
+                        'allegro_pl': logging.DEBUG,
+                        '__main__': logging.DEBUG,
+                        'tenacity': logging.WARN
+                        }.items():
         log = logging.getLogger(name)
-        log.setLevel(logging.DEBUG)
+        log.setLevel(level)
         log.addHandler(handler)
 
 
