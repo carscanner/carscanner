@@ -45,7 +45,7 @@ class OfferService:
 
             result = data.items.promoted + data.items.regular
 
-            logger.info('total %d, this run %d, offset', data.search_meta.available_count, len(result), offset)
+            logger.info('total %d, this run %d, offset %d', data.search_meta.available_count, len(result), offset)
             yield result
 
             offset += len(result)
