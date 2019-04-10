@@ -12,12 +12,12 @@ class FilterService:
         self._filter_dao = filter_dao
         self._crit_dao = crit_dao
 
-    def load_parameters(self):
+    def load_filters(self):
         for crit in self._crit_dao.all():
-            parameters = self._get_filters(crit.category_id)
-            for param in parameters:
-                param = FilterService._filter_to_dict(crit.category_id, param)
-                self._filter_dao.insert(param)
+            filters = self._get_filters(crit.category_id)
+            for filt in filters:
+                filt = FilterService._filter_to_dict(crit.category_id, filt)
+                self._filter_dao.insert(filt)
 
     @staticmethod
     def _filter_to_dict(cat_id, param: allegro_api.models.ListingResponseFilters) -> dict:

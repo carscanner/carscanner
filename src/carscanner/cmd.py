@@ -3,6 +3,7 @@ import argparse
 import carscanner.allegro
 import carscanner.criteria
 import carscanner.make_model
+import carscanner.offers
 from carscanner.allegro.auth import InsecureTokenStore, AuthorizationCodeAuth, TravisTokenStore
 
 
@@ -33,6 +34,13 @@ class CommandLine:
         criteria_build_opt = criteria_subparsers.add_parser('build')
         criteria_build_opt.set_defaults(func=carscanner.criteria.criteria_build_cmd)
 
+        offers_parser = subparser.add_parser('offers')
+        offers_subparsers = offers_parser.add_subparsers()
+
+        offers_update_opt = offers_subparsers.add_parser('update')
+        offers_update_opt.set_defaults(func=carscanner.offers.update_cmd)
+        offers_update_opt.add_argument('data_dir', default=',', metavar='directory')
+
         args = parser.parse_args()
         args.func(**vars(args))
 
@@ -51,6 +59,7 @@ class CommandLine:
 
     def token_fetch(self, format, **_):
         self._get_oauth(format).fetch_token()
+
 
 if __name__ == '__main__':
     carscanner.configure_logging()

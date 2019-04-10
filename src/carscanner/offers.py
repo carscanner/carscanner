@@ -1,5 +1,6 @@
 import datetime
 import logging
+import os.path
 import typing
 
 import allegro_api.api
@@ -10,6 +11,7 @@ import carscanner.allegro
 from carscanner import chunks, CarOffersBuilder, CarOfferBuilder
 from carscanner.allegro import CarscannerAllegro as Allegro
 from carscanner.dao import Criteria, CriteriaDao, CarMakeModelDao, VoivodeshipDao, CarOfferDao, FilterDao
+from carscanner.data import DataManager
 from carscanner.filter import FilterService
 
 logger = logging.getLogger(__name__)
@@ -25,7 +27,7 @@ class OfferService:
     search_params = {
         'fallback': False,
         'include': ['-all', 'items', 'searchMeta'],
-        'limit': 100
+        'sort': '-startTime'
     }
 
     def __init__(self, allegro: Allegro, criteria_dao, car_offers_builder: CarOffersBuilder, car_offer_dao,
@@ -45,7 +47,7 @@ class OfferService:
 
             result = data.items.promoted + data.items.regular
 
-            logger.info('total %d, this run %d, offset %d', data.search_meta.available_count, len(result), offset)
+            logger.info('get_listing: total %d, this run %d, offset %d', data.search_meta.available_count, len(result), offset)
             yield result
 
             offset += len(result)
@@ -57,35 +59,41 @@ class OfferService:
         result.update(self.filter_service.transform_filters(crit.category_id, OfferService._filter_template))
         result['category.id'] = crit.category_id
         result['offset'] = offset
+        result['limit'] = self._allegro.get_listing.limit_max
 
         return result
 
     def get_offers(self):
+        items = []
         for crit in self.criteria_dao.all():
-            for items in self._get_offers_for_criteria(crit):
-                item_ids = [item.id for item in items]
+            for crit_items in self._get_offers_for_criteria(crit):
+                items.extend(crit_items)
 
-                existing = self.car_offer_dao.search_existing_ids(item_ids)
-                self.car_offer_dao.update_last_spotted(existing, self.timestamp)
+        item_ids = [item.id for item in items]
 
-                # get non-existing ids
-                new_items = [item for item in items if item.id not in existing]
+        existing = self.car_offer_dao.search_existing_ids(item_ids)
+        self.car_offer_dao.update_last_spotted(existing, self.timestamp)
 
-                # pull their details
-                car_offers = self.car_offers_builder.to_car_offers(new_items)
-                self._get_items_info(car_offers)
+        # get non-existing ids
+        new_items = [item for item in items if item.id not in existing]
 
-    def _get_items_info(self, items: typing.Dict[str, CarOfferBuilder]):
+        # pull their details
+        car_offers = self.car_offers_builder.to_car_offers(new_items)
+        for item_info_chunk in self._get_items_info(car_offers):
+            for value in item_info_chunk.arrayItemListInfo.item:
+                id = str(value.itemInfo.itId)
+                car_offers[id].update_from_item_info_struct(value)
+        self.car_offer_dao.insert_multiple([builder.c for builder in car_offers.values()])
+
+    def _get_items_info(self, items: typing.Dict[str, CarOfferBuilder]) -> typing.Iterable[zeep.xsd.CompoundValue]:
         offer_ids = list(items.keys())
+        chunk_no = 0
+        from math import ceil
+        chunks_count = ceil(len(offer_ids) / self._allegro.get_items_info.items_limit)
         for chunk in chunks(offer_ids, self._allegro.get_items_info.items_limit):
-
-            offer_ext: zeep.xsd.CompoundValue = self._allegro.get_items_info(itemsIdArray=chunk, getDesc=1,
-                                                                             getImageUrl=1,
-                                                                             getAttribs=1)
-            for value in offer_ext.arrayItemListInfo.item:
-                items[str(value.itemInfo.itId)].update_from_item_info_struct(value)
-
-        self.car_offer_dao.insert_multiple([builder.c for builder in items.values()])
+            logger.info('get_items_info: chunk %d out of %d', chunk_no, chunks_count)
+            yield self._allegro.get_items_info(itemsIdArray=chunk, getDesc=1, getImageUrl=1, getAttribs=1)
+            chunk_no += 1
 
 
 def _update_meta(db, ts):
@@ -108,29 +116,29 @@ def _report_meta(db):
         logger.info('First run')
 
 
-if __name__ == '__main__':
-    from os.path import expanduser as xu
-    from tinydb import TinyDB
-
-    carscanner.configure_logging()
-
+def update_cmd(data_dir: str, **_):
     client = carscanner.allegro.get_client()
+    dm = DataManager(os.path.expanduser(data_dir))
 
-    with TinyDB(xu('~/.allegro/data/static.json'), indent=2) as static_db, \
-            TinyDB(xu('~/.allegro/data/cars.json'), indent=2) as db, \
-            TinyDB(storage=tinydb.storages.MemoryStorage) as mem_db:
+    try:
+        static_db = dm.static_data()
+        db = dm.cars_data()
+        mem_db = dm.mem_db()
+
         _report_meta(db)
-
         ts = datetime.datetime.utcnow()
         _update_meta(db, ts)
 
         criteria_dao = CriteriaDao(static_db)
         voivodeship_dao = VoivodeshipDao(static_db)
         car_make_mode_dao = CarMakeModelDao(static_db)
-        car_offers_builder = CarOffersBuilder(voivodeship_dao, car_make_mode_dao)
         car_offer_dao = CarOfferDao(db)
+
+        car_offers_builder = CarOffersBuilder(voivodeship_dao, car_make_mode_dao)
         filter_service = FilterService(client, FilterDao(mem_db), criteria_dao)
         offer_service = OfferService(client, criteria_dao, car_offers_builder, car_offer_dao, filter_service, ts)
 
-        filter_service.load_parameters()
+        filter_service.load_filters()
         offer_service.get_offers()
+    finally:
+        dm.close()

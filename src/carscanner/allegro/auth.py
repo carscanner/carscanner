@@ -63,7 +63,7 @@ class AuthorizationCodeAuth(allegro_pl.AllegroAuth):
             self._on_token_updated(token)
         except oauthlib.oauth2.rfc6749.errors.OAuth2Error as x:
             logger.warn('Refresh token failed')
-            if x.description == 'Full authentication is required to access this resource'\
+            if x.description == 'Full authentication is required to access this resource' \
                     or x.description.startswith('Invalid refresh token: '):
                 self.fetch_token()
             else:
@@ -122,5 +122,5 @@ class TravisTokenStore(allegro_pl.TokenStore):
         self.refresh_token = os.environ.get(TravisTokenStore.KEY_REFRESH_TOKEN)
 
     def save(self):
-        """ encrypt token and store it in .travis file"""
+        """ encrypt token and store it in .travis.yml file"""
         raise NotImplementedError

@@ -1,4 +1,5 @@
 /.idea/
 /dist/
 /pip-wheel-metadata/
-/src/carscanner.egg-info/
+*.egg-info/
+__pycache__/

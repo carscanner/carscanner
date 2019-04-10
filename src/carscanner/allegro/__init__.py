@@ -43,6 +43,7 @@ class CarscannerAllegro(allegro_pl.Allegro):
 
         self.get_listing = get_listing
         self.get_listing.limit_min = 1
+        self.get_listing.limit_max = 100
 
         @self.retry
         def get_items_info(**kwargs):
