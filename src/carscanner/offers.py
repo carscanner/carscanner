@@ -4,13 +4,12 @@ import os.path
 import typing
 
 import allegro_api.api
-import tinydb
 import zeep
 
 import carscanner.allegro
 from carscanner import chunks, CarOffersBuilder, CarOfferBuilder
 from carscanner.allegro import CarscannerAllegro as Allegro
-from carscanner.dao import Criteria, CriteriaDao, CarMakeModelDao, VoivodeshipDao, CarOfferDao, FilterDao
+from carscanner.dao import Criteria, CriteriaDao, CarMakeModelDao, CarOfferDao, FilterDao, MetadataDao, VoivodeshipDao
 from carscanner.data import DataManager
 from carscanner.filter import FilterService
 
@@ -47,7 +46,8 @@ class OfferService:
 
             result = data.items.promoted + data.items.regular
 
-            logger.info('get_listing: total %d, this run %d, offset %d', data.search_meta.available_count, len(result), offset)
+            logger.info('get_listing: total %d, this run %d, offset %d', data.search_meta.available_count, len(result),
+                        offset)
             yield result
 
             offset += len(result)
@@ -96,26 +96,6 @@ class OfferService:
             chunk_no += 1
 
 
-def _update_meta(db, ts):
-    import platform
-    from tinydb import Query
-
-    tbl = db.table(db.DEFAULT_TABLE)
-    meta = {
-        'timestamp': ts.isoformat(),
-        'host': platform.node()
-    }
-    tbl.upsert(meta, Query())
-
-
-def _report_meta(db):
-    old_meta = db.get(tinydb.Query())
-    if old_meta:
-        logger.info('Last run at %s on %s', old_meta['timestamp'], old_meta['host'])
-    else:
-        logger.info('First run')
-
-
 def update_cmd(data_dir: str, **_):
     client = carscanner.allegro.get_client()
     dm = DataManager(os.path.expanduser(data_dir))
@@ -125,10 +105,9 @@ def update_cmd(data_dir: str, **_):
         db = dm.cars_data()
         mem_db = dm.mem_db()
 
-        _report_meta(db)
         ts = datetime.datetime.utcnow()
-        _update_meta(db, ts)
 
+        meta = MetadataDao(db)
         criteria_dao = CriteriaDao(static_db)
         voivodeship_dao = VoivodeshipDao(static_db)
         car_make_mode_dao = CarMakeModelDao(static_db)
@@ -137,6 +116,9 @@ def update_cmd(data_dir: str, **_):
         car_offers_builder = CarOffersBuilder(voivodeship_dao, car_make_mode_dao)
         filter_service = FilterService(client, FilterDao(mem_db), criteria_dao)
         offer_service = OfferService(client, criteria_dao, car_offers_builder, car_offer_dao, filter_service, ts)
+
+        meta.report()
+        meta.update(ts)
 
         filter_service.load_filters()
         offer_service.get_offers()
