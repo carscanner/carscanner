@@ -4,7 +4,8 @@ import carscanner.allegro
 import carscanner.criteria
 import carscanner.make_model
 import carscanner.offers
-from carscanner.allegro.auth import InsecureTokenStore, AuthorizationCodeAuth, TravisTokenStore
+from carscanner.allegro.auth import InsecureTokenStore, AuthorizationCodeAuth, TravisTokenStore, YamlClientCodeStore, \
+    EnvironClientCodeStore
 
 
 class CommandLine:
@@ -12,7 +13,7 @@ class CommandLine:
         parser = argparse.ArgumentParser()
         subparser = parser.add_subparsers()
 
-        token_parser = subparser.add_parser('token', help='Manipulate securoty tokens')
+        token_parser = subparser.add_parser('token', help='Manipulate security tokens')
         token_subparsers = token_parser.add_subparsers()
         token_parser.add_argument('--format', nargs='?', default='yaml', choices=['yaml', 'travis'],
                                   help='Where to save file to. One of %(choices)s. Default is %(default)s',
@@ -40,6 +41,8 @@ class CommandLine:
         offers_update_opt = offers_subparsers.add_parser('update')
         offers_update_opt.set_defaults(func=carscanner.offers.update_cmd)
         offers_update_opt.add_argument('--data', default='.', help='Database directory', metavar='directory')
+        offers_update_opt.add_argument('--auth', default='insecure', choices=['insecure', 'travis'],
+                                       help='Token store', metavar='provider')
 
         args = parser.parse_args()
         if hasattr(args, 'func'):
@@ -50,12 +53,13 @@ class CommandLine:
     def _get_oauth(self, format):
         if format == 'yaml':
             ts = InsecureTokenStore(carscanner.allegro.token_path)
+            cs = YamlClientCodeStore(carscanner.allegro.codes_path)
         elif format == 'travis':
             ts = TravisTokenStore()
+            cs = EnvironClientCodeStore()
         else:
             raise ValueError(format)
-        codes = carscanner.allegro.auth.get_codes()
-        return AuthorizationCodeAuth(codes['client_id'], codes['client_secret'], ts)
+        return AuthorizationCodeAuth(cs, ts)
 
     def token_refresh(self, format, **_):
         self._get_oauth(format).refresh_token()

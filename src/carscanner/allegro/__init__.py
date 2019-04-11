@@ -3,7 +3,7 @@ import os
 import allegro_api
 import allegro_pl
 
-from .auth import AuthorizationCodeAuth, InsecureTokenStore, get_codes
+from .auth import AuthorizationCodeAuth, EnvironClientCodeStore, InsecureTokenStore, YamlClientCodeStore
 
 
 def get_root():
@@ -77,13 +77,12 @@ class CarscannerAllegro(allegro_pl.Allegro):
         pass
 
 
-def get_client() -> CarscannerAllegro:
-    client_id = os.environ.get('ALLEGRO_CLIENT_ID')
-    client_secret = os.environ.get('ALLEGRO_CLIENT_SECRET')
-    if not client_id and not client_secret:
-        codes = get_codes()
-        if client_id is None: client_id = codes.get('client_id')
-        if client_secret is None: client_secret = codes.get('client_secret')
+def get_client(code_store, token_store: allegro_pl.TokenStore) -> CarscannerAllegro:
+    if code_store is None:
+        code_store = YamlClientCodeStore()
 
-    auth = AuthorizationCodeAuth(client_id, client_secret, InsecureTokenStore(token_path))
+    if token_store is None:
+        token_store = InsecureTokenStore(token_path)
+
+    auth = AuthorizationCodeAuth(code_store, token_store)
     return CarscannerAllegro(auth)

@@ -21,25 +21,21 @@ URL_AUTHORIZE = 'https://allegro.pl/auth/oauth/authorize'
 logger = logging.getLogger(__name__)
 
 
-def get_codes() -> dict:
-    with open(carscanner.allegro.codes_path, 'rt') as f:
-        return yaml.safe_load(f)
-
-
 class AuthorizationCodeAuth(allegro_pl.AllegroAuth):
 
-    def __init__(self, client_id, client_secret, ts: allegro_pl.TokenStore):
-        super().__init__(client_id, client_secret, ts)
+    def __init__(self, cs: allegro_pl.ClientCodeStore, ts: allegro_pl.TokenStore):
+        super().__init__(cs, ts)
 
-        client = oauthlib.oauth2.WebApplicationClient(self.client_id, access_token=self._token_store.access_token)
+        client = oauthlib.oauth2.WebApplicationClient(self._cs.client_id, access_token=self._token_store.access_token)
 
-        self.oauth = requests_oauthlib.OAuth2Session(self.client_id, client, allegro_pl.URL_TOKEN,
+        self.oauth = requests_oauthlib.OAuth2Session(self._cs.client_id, client, allegro_pl.URL_TOKEN,
                                                      redirect_uri=URL_CALLBACK,
                                                      token_updater=self._token_store.access_token)
 
     def fetch_token(self):
         super().fetch_token()
-        cherrypy.tree.mount(WebAuth(self.client_id, self.client_secret, self.oauth, self._on_token_updated))
+        cherrypy.tree.mount(
+            WebAuth(self._cs.client_id, self._cs.client_secret, self.oauth, self._on_token_updated))
 
         cherrypy.engine.start()
         cherrypy.engine.block()
@@ -58,8 +54,8 @@ class AuthorizationCodeAuth(allegro_pl.AllegroAuth):
                  'refresh_token': self.token_store.refresh_token,
                  'redirect_uri': URL_CALLBACK
                  })
-            token = self.oauth.refresh_token(url, auth=HTTPBasicAuth(self.client_id,
-                                                                     self.client_secret))
+            token = self.oauth.refresh_token(url, auth=HTTPBasicAuth(self._cs.client_id,
+                                                                     self._cs.client_secret))
             self._on_token_updated(token)
         except oauthlib.oauth2.rfc6749.errors.OAuth2Error as x:
             logger.warn('Refresh token failed')
@@ -102,7 +98,9 @@ class WebAuth:
 
 
 class InsecureTokenStore(allegro_pl.TokenStore):
-    def __init__(self, path: str = 'insecure-tokens.yaml'):
+    def __init__(self, path: str = None):
+        if path is None:
+            path = carscanner.allegro.token_path
         super().__init__()
         self._path = path
         with open(path, 'rt') as f:
@@ -124,3 +122,17 @@ class TravisTokenStore(allegro_pl.TokenStore):
     def save(self):
         """ encrypt token and store it in .travis.yml file"""
         raise NotImplementedError
+
+
+class YamlClientCodeStore(allegro_pl.ClientCodeStore):
+    def __init__(self, path=None):
+        if path is None:
+            path = carscanner.allegro.codes_path
+        with open(path, 'rt') as f:
+            d = yaml.safe_load(f)
+            super().__init__(d['client_id'], d['client_secret'])
+
+
+class EnvironClientCodeStore(allegro_pl.ClientCodeStore):
+    def __init__(self):
+        super().__init__(os.environ['ALLEGRO_CLIENT_ID'], os.environ['ALLEGRO_CLIENT_SECRET'])

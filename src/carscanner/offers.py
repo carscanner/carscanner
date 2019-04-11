@@ -96,8 +96,16 @@ class OfferService:
             chunk_no += 1
 
 
-def update_cmd(data: str, **_):
-    client = carscanner.allegro.get_client()
+def update_cmd(data: str, auth, **_):
+    if auth == 'insecure':
+        ts = carscanner.allegro.auth.InsecureTokenStore(carscanner.allegro.token_path)
+        cs = carscanner.allegro.auth.YamlClientCodeStore(carscanner.allegro.codes_path)
+    elif auth == 'travis':
+        ts = carscanner.allegro.auth.TravisTokenStore()
+        cs = carscanner.allegro.auth.EnvironClientCodeStore()
+    else:
+        raise ValueError(auth)
+    client = carscanner.allegro.get_client(cs, ts)
     dm = DataManager(os.path.expanduser(data))
 
     try:
