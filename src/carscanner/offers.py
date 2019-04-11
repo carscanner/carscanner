@@ -87,7 +87,7 @@ class OfferService:
 
     def _get_items_info(self, items: typing.Dict[str, CarOfferBuilder]) -> typing.Iterable[zeep.xsd.CompoundValue]:
         offer_ids = list(items.keys())
-        chunk_no = 0
+        chunk_no = 1
         from math import ceil
         chunks_count = ceil(len(offer_ids) / self._allegro.get_items_info.items_limit)
         for chunk in chunks(offer_ids, self._allegro.get_items_info.items_limit):
@@ -96,9 +96,9 @@ class OfferService:
             chunk_no += 1
 
 
-def update_cmd(data_dir: str, **_):
+def update_cmd(data: str, **_):
     client = carscanner.allegro.get_client()
-    dm = DataManager(os.path.expanduser(data_dir))
+    dm = DataManager(os.path.expanduser(data))
 
     try:
         static_db = dm.static_data()

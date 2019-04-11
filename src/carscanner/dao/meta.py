@@ -9,13 +9,15 @@ log = logging.getLogger(__name__)
 
 
 class MetadataDao:
+    _meta_version = 2
+
     def __init__(self, db: TinyDB):
         self._db = db
         self._tbl: Table = db.table('meta')
 
         self._meta = self._tbl.get(Query())
         if self._meta:
-            assert self._meta['version'] == 3
+            assert self._meta['version'] == MetadataDao._meta_version
 
     def update(self, ts: datetime.datetime):
         self._meta['timestamp'] = ts.isoformat()
@@ -37,7 +39,7 @@ class MetadataDao:
         if not old_meta:
             raise Exception('No metadata to migrate')
 
-        old_meta['version'] = 2
+        old_meta['version'] = MetadataDao._meta_version
 
         self._tbl.insert(old_meta)
         old_tbl.purge()
