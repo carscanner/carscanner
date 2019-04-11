@@ -7,8 +7,7 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.7"
-mattes-allegro-pl = {path = '../mattes-allegro-pl'}
-allegro-pl-rest-api = {path = '../allegro-pl-rest-api'}
+mattes-allegro-pl = "^0.3.2"
 CherryPy = "^18.1"
 PyYAML = "^5.1"
 tinydb = "^3.13"
