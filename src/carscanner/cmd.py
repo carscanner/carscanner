@@ -1,16 +1,21 @@
 import argparse
+import os
+import pathlib
 
 import carscanner.allegro
 import carscanner.criteria
 import carscanner.make_model
 import carscanner.offers
-from carscanner.allegro.auth import InsecureTokenStore, AuthorizationCodeAuth, TravisTokenStore, YamlClientCodeStore, \
+from carscanner.allegro.auth import InsecureTokenStore, AuthorizationCodeAuth, YamlClientCodeStore, \
     EnvironClientCodeStore
 
 
 class CommandLine:
     def __init__(self):
         parser = argparse.ArgumentParser()
+        parser.add_argument('--data', default='.', type=pathlib.Path, help='Database directory',
+                            metavar='directory')
+
         subparser = parser.add_subparsers()
 
         token_parser = subparser.add_parser('token', help='Manipulate security tokens')
@@ -40,7 +45,6 @@ class CommandLine:
 
         offers_update_opt = offers_subparsers.add_parser('update')
         offers_update_opt.set_defaults(func=carscanner.offers.update_cmd)
-        offers_update_opt.add_argument('--data', default='.', help='Database directory', metavar='directory')
         offers_update_opt.add_argument('--auth', default='insecure', choices=['insecure', 'travis'],
                                        help='Token store', metavar='provider')
 
@@ -50,22 +54,21 @@ class CommandLine:
         else:
             parser.print_help()
 
-    def _get_oauth(self, format):
+    def _get_oauth(self, format, data):
+        ts = InsecureTokenStore(os.path.expanduser(str(data / 'tokens.yaml')))
         if format == 'yaml':
-            ts = InsecureTokenStore(carscanner.allegro.token_path)
             cs = YamlClientCodeStore(carscanner.allegro.codes_path)
         elif format == 'travis':
-            ts = TravisTokenStore()
             cs = EnvironClientCodeStore()
         else:
             raise ValueError(format)
         return AuthorizationCodeAuth(cs, ts)
 
-    def token_refresh(self, format, **_):
-        self._get_oauth(format).refresh_token()
+    def token_refresh(self, format, data, **_):
+        self._get_oauth(format, data).refresh_token()
 
-    def token_fetch(self, format, **_):
-        self._get_oauth(format).fetch_token()
+    def token_fetch(self, format, data, **_):
+        self._get_oauth(format, data).fetch_token()
 
 
 if __name__ == '__main__':

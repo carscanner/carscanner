@@ -23,7 +23,11 @@ logger = logging.getLogger(__name__)
 
 class AuthorizationCodeAuth(allegro_pl.AllegroAuth):
 
-    def __init__(self, cs: allegro_pl.ClientCodeStore, ts: allegro_pl.TokenStore):
+    def __init__(self, cs: allegro_pl.ClientCodeStore, ts: allegro_pl.TokenStore, allow_fetch: bool = True):
+        """
+        :param allow_fetch: If True, when both access_token and refresh token are not present or expired, start OAuth2
+            flow to get them. This will start a web server to allow the redirect from authentication server.
+        """
         super().__init__(cs, ts)
 
         client = oauthlib.oauth2.WebApplicationClient(self._cs.client_id, access_token=self._token_store.access_token)
@@ -31,8 +35,12 @@ class AuthorizationCodeAuth(allegro_pl.AllegroAuth):
         self.oauth = requests_oauthlib.OAuth2Session(self._cs.client_id, client, allegro_pl.URL_TOKEN,
                                                      redirect_uri=URL_CALLBACK,
                                                      token_updater=self._token_store.access_token)
+        self._allow_fetch = allow_fetch
 
     def fetch_token(self):
+        if not self._allow_fetch:
+            raise Exception('Fetching token disabled')
+
         super().fetch_token()
         cherrypy.tree.mount(
             WebAuth(self._cs.client_id, self._cs.client_secret, self.oauth, self._on_token_updated))
@@ -58,9 +66,10 @@ class AuthorizationCodeAuth(allegro_pl.AllegroAuth):
                                                                      self._cs.client_secret))
             self._on_token_updated(token)
         except oauthlib.oauth2.rfc6749.errors.OAuth2Error as x:
-            logger.warn('Refresh token failed')
+            logger.warning('Refresh token failed', x.error)
             if x.description == 'Full authentication is required to access this resource' \
-                    or x.description.startswith('Invalid refresh token: '):
+                    or x.description.startswith('Invalid refresh token: ') \
+                    or x.error == 'invalid_token':
                 self.fetch_token()
             else:
                 raise

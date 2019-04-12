@@ -1,6 +1,7 @@
 import datetime
 import logging
 import os.path
+import pathlib
 import typing
 
 import allegro_api.api
@@ -96,17 +97,18 @@ class OfferService:
             chunk_no += 1
 
 
-def update_cmd(data: str, auth, **_):
+def update_cmd(data: pathlib.Path, auth, **_):
+    ts = carscanner.allegro.auth.InsecureTokenStore(str(data / 'tokens.yaml'))
     if auth == 'insecure':
-        ts = carscanner.allegro.auth.InsecureTokenStore(carscanner.allegro.token_path)
         cs = carscanner.allegro.auth.YamlClientCodeStore(carscanner.allegro.codes_path)
+        allow_fetch = True
     elif auth == 'travis':
-        ts = carscanner.allegro.auth.TravisTokenStore()
         cs = carscanner.allegro.auth.EnvironClientCodeStore()
+        allow_fetch = False
     else:
         raise ValueError(auth)
-    client = carscanner.allegro.get_client(cs, ts)
-    dm = DataManager(os.path.expanduser(data))
+    client = carscanner.allegro.get_client(cs, ts, allow_fetch)
+    dm = DataManager(os.path.expanduser(str(data)))
 
     try:
         static_db = dm.static_data()

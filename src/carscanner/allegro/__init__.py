@@ -77,12 +77,12 @@ class CarscannerAllegro(allegro_pl.Allegro):
         pass
 
 
-def get_client(code_store, token_store: allegro_pl.TokenStore) -> CarscannerAllegro:
+def get_client(code_store, token_store: allegro_pl.TokenStore, allow_fetch=True) -> CarscannerAllegro:
     if code_store is None:
         code_store = YamlClientCodeStore()
 
     if token_store is None:
         token_store = InsecureTokenStore(token_path)
 
-    auth = AuthorizationCodeAuth(code_store, token_store)
+    auth = AuthorizationCodeAuth(code_store, token_store, allow_fetch)
     return CarscannerAllegro(auth)
