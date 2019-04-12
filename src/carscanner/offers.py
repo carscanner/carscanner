@@ -98,7 +98,7 @@ class OfferService:
 
 
 def update_cmd(data: pathlib.Path, auth, **_):
-    ts = carscanner.allegro.auth.InsecureTokenStore(str(data / 'tokens.yaml'))
+    ts = carscanner.allegro.auth.InsecureTokenStore(os.path.expanduser(str(data / 'tokens.yaml')))
     if auth == 'insecure':
         cs = carscanner.allegro.auth.YamlClientCodeStore(carscanner.allegro.codes_path)
         allow_fetch = True
