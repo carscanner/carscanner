@@ -95,7 +95,7 @@ class OffersCommand:
         offers_subparsers = offers_parser.add_subparsers()
 
         offers_update_opt = offers_subparsers.add_parser('update')
-        offers_update_opt.set_defaults(func=lambda: ctx.offers_svc().update())
+        offers_update_opt.set_defaults(func=lambda: ctx.offers_cmd().update())
 
     def __init__(self, offer_svc, meta_dao, filter_svc: carscanner.FilterService, ts: datetime.datetime):
         self.ts = ts
