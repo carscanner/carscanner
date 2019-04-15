@@ -14,6 +14,8 @@ _K_LAST_SPOTTED = 'last_spotted'
 
 @dataclasses.dataclass
 class CarOffer:
+    first_spotted: datetime.date
+    last_spotted: datetime.date
     id: int = None
     make: str = None
     model: str = None
@@ -23,8 +25,6 @@ class CarOffer:
     url: str = None
     name: str = None
     price: decimal.Decimal = None
-    first_spotted: datetime.date = dataclasses.field(default_factory=datetime.datetime.utcnow)
-    last_spotted: datetime.date = dataclasses.field(default_factory=datetime.datetime.utcnow)
     voivodeship: str = None
     location: str = None
     imported: bool = None

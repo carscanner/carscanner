@@ -1,14 +1,15 @@
 import datetime
 import decimal
 from unittest import TestCase
+
 from carscanner.dao import CarOffer
 
 
 class TestCarOffer(TestCase):
     def test_to_dict(self):
-        a = CarOffer(price=decimal.Decimal("1"))
+        ts = datetime.datetime.utcnow()
+        a = CarOffer(ts, ts, price=decimal.Decimal("1"))
         d = a.to_dict()
-        # print(d)
         self.assertIsInstance(d['price'], str)
         self.assertIsInstance(d['first_spotted'], int)
 
@@ -17,4 +18,3 @@ class TestCarOffer(TestCase):
         self.assertEqual('1', o.id)
         self.assertEqual(datetime.datetime(2019, 4, 5, 2, 0), o.first_spotted)
         self.assertEqual(decimal.Decimal(2), o.price)
-        # print(o)

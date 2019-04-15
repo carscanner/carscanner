@@ -1,76 +1,236 @@
 import argparse
-import os
+import datetime
 import pathlib
 
+import carscanner
 import carscanner.allegro
-import carscanner.criteria
-import carscanner.make_model
-import carscanner.offers
-from carscanner.allegro.auth import InsecureTokenStore, AuthorizationCodeAuth, YamlClientCodeStore, \
-    EnvironClientCodeStore
+import carscanner.dao
+import carscanner.data
+from carscanner.utils import memoized
+
+ENV_TRAVIS = 'travis'
+ENV_LOCAL = 'local'
 
 
 class CommandLine:
     def __init__(self):
+        self._context = Context()
+        self._parser = self.build_parser()
+
+    def build_parser(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument('--data', default='.', type=pathlib.Path, help='Database directory',
-                            metavar='directory')
+        parser.add_argument('--data', '-d', default='.', type=pathlib.Path, metavar='dir',
+                            help='Database directory. Default is %(default)s')
+        parser.add_argument('--environment', '-e', default=ENV_LOCAL, choices=[ENV_LOCAL, ENV_TRAVIS], metavar='env',
+                            help='Where to read client codes from. One of %(choices)s. Default is %(default)s')
+        subparsers = parser.add_subparsers()
 
-        subparser = parser.add_subparsers()
+        for c in [TokenCommand, CarListCommand, CriteriaCommand, OffersCommand, VoivodeshipCommand]:
+            c.build_argparse(subparsers, self._context, parser.print_help)
 
-        token_parser = subparser.add_parser('token', help='Manipulate security tokens')
+        return parser
+
+    def start(self):
+        ns = self._parser.parse_args()
+        self._context.ns = ns
+        ns.data = ns.data.expanduser()
+
+        ns.func()
+        self._context.close()
+
+
+class TokenCommand:
+    @staticmethod
+    def build_argparse(subparsers, ctx, help_fn):
+        token_parser = subparsers.add_parser('token', help='Manipulate security tokens')
+        token_parser.set_defaults(func=help_fn)
         token_subparsers = token_parser.add_subparsers()
-        token_parser.add_argument('--format', nargs='?', default='yaml', choices=['yaml', 'travis'],
-                                  help='Where to save file to. One of %(choices)s. Default is %(default)s',
-                                  metavar='format')
 
-        token_refresh_parser = token_subparsers.add_parser('refresh', help='refresh token')
-        token_refresh_parser.set_defaults(func=self.token_refresh)
+        token_refresh_parser = token_subparsers.add_parser('refresh', help='Refresh token')
+        token_refresh_parser.set_defaults(func=lambda: ctx.auth().refresh_token())
 
-        token_fetch_opt = token_subparsers.add_parser('fetch', help='fetch token')
-        token_fetch_opt.set_defaults(func=self.token_fetch)
+        token_fetch_opt = token_subparsers.add_parser('fetch', help='Fetch token')
+        token_fetch_opt.set_defaults(func=lambda: ctx.auth().fetch_token())
 
-        car_list_opt = subparser.add_parser('carlist', help='Manipulate car make&mode database')
-        car_list_opt.set_defaults(func=carscanner.make_model.carlist_cmd)
-        car_list_opt.add_argument('path', help='Input json file', metavar='path')
 
-        criteria_parser = subparser.add_parser('criteria', help='Manipulate criteria')
+class CarListCommand:
+    @staticmethod
+    def build_argparse(subparsers, ctx, print_help):
+        carlist_cmd = subparsers.add_parser('carlist', help='Manipulate car makes & models list')
+        carlist_cmd.set_defaults(func=print_help)
+        carlist_subparsers = carlist_cmd.add_subparsers()
+
+        carlist_update_cmd = carlist_subparsers.add_parser('update', help='Load car makes & models from json file to '
+                                                                          'the database')
+        carlist_update_cmd.set_defaults(func=lambda: ctx.carlist_cmd().update())
+        carlist_update_cmd.add_argument('--input', '-i', type=pathlib.Path, help='Input json file', metavar='path')
+
+        carlist_show_cmd = carlist_subparsers.add_parser('show')
+        carlist_show_cmd.set_defaults(func=lambda: ctx.car_makemodel_svc().show_car_list())
+
+    def __init__(self, service: carscanner.CarMakeModelService, input_file):
+        self.input = input_file
+        self._service = service
+
+    def update(self):
+        self._service.load_car_list(self.input)
+
+
+class CriteriaCommand:
+    @staticmethod
+    def build_argparse(subparsers, ctx, print_help):
+        criteria_parser = subparsers.add_parser('criteria', aliases=['crit'], help='Manipulate criteria')
+        criteria_parser.set_defaults(func=print_help)
         criteria_subparsers = criteria_parser.add_subparsers()
 
-        criteria_build_opt = criteria_subparsers.add_parser('build')
-        criteria_build_opt.set_defaults(func=carscanner.criteria.criteria_build_cmd)
+        criteria_build_opt = criteria_subparsers.add_parser('build', help='Build criteria database')
+        criteria_build_opt.set_defaults(func=lambda: ctx.categories_svc().get_categories())
 
-        offers_parser = subparser.add_parser('offers', help='Manipulate offers')
+
+class OffersCommand:
+    @staticmethod
+    def build_argparse(subparsers, ctx, print_help):
+        offers_parser = subparsers.add_parser('offers', help='Manipulate offers')
+        offers_parser.set_defaults(func=print_help)
         offers_subparsers = offers_parser.add_subparsers()
 
         offers_update_opt = offers_subparsers.add_parser('update')
-        offers_update_opt.set_defaults(func=carscanner.offers.update_cmd)
-        offers_update_opt.add_argument('--auth', default='insecure', choices=['insecure', 'travis'],
-                                       help='Token store', metavar='provider')
+        offers_update_opt.set_defaults(func=lambda: ctx.offers_svc().update())
 
-        args = parser.parse_args()
-        if hasattr(args, 'func'):
-            args.func(**vars(args))
+    def __init__(self, offer_svc, meta_dao, filter_svc: carscanner.FilterService, ts: datetime.datetime):
+        self.ts = ts
+        self.filter_svc = filter_svc
+        self.meta_dao: carscanner.dao.MetadataDao = meta_dao
+        self.offer_svc: carscanner.OfferService = offer_svc
+
+    def update(self):
+        self.meta_dao.report()
+        self.filter_svc.load_filters()
+        self.offer_svc.get_offers()
+        self.meta_dao.update(self.ts)
+
+
+class VoivodeshipCommand:
+    @staticmethod
+    def build_argparse(subparsers, ctx, print_help):
+        vs_parser = subparsers.add_parser('voivodeship', help='Manipulate voivodeship database')
+        vs_parser.set_defaults(func=print_help)
+        vs_subparsers = vs_parser.add_subparsers()
+
+        vs_load_cmd = vs_subparsers.add_parser('load')
+        vs_load_cmd.set_defaults(func=lambda: ctx.voivodeship_svc().load_voivodeships())
+
+
+class Context:
+    def __init__(self):
+        self._ns = None
+        self._data_manager = None
+
+    def close(self):
+        if self._data_manager:
+            self._data_manager.close()
+
+    @property
+    def ns(self):
+        return self._ns
+
+    @ns.setter
+    def ns(self, ns):
+        self._ns = ns
+
+    @memoized
+    def auth(self):
+        ts = carscanner.allegro.InsecureTokenStore(self.ns.data / 'tokens.yaml')
+        if self.ns.environment == ENV_LOCAL:
+            cs = carscanner.allegro.YamlClientCodeStore(carscanner.allegro.codes_path)
+            allow_fetch = True
+        elif self.ns.environment == ENV_TRAVIS:
+            cs = carscanner.allegro.EnvironClientCodeStore()
+            allow_fetch = False
         else:
-            parser.print_help()
+            raise ValueError(self.ns.environment)
+        return carscanner.allegro.CarScannerCodeAuth(cs, ts, allow_fetch)
 
-    def _get_oauth(self, format, data):
-        ts = InsecureTokenStore(os.path.expanduser(str(data / 'tokens.yaml')))
-        if format == 'yaml':
-            cs = YamlClientCodeStore(carscanner.allegro.codes_path)
-        elif format == 'travis':
-            cs = EnvironClientCodeStore()
-        else:
-            raise ValueError(format)
-        return AuthorizationCodeAuth(cs, ts)
+    @memoized
+    def allegro(self):
+        return carscanner.allegro.CarscannerAllegro(self.auth())
 
-    def token_refresh(self, format, data, **_):
-        self._get_oauth(format, data).refresh_token()
+    @memoized
+    def carlist_cmd(self):
+        return CarListCommand(self.car_makemodel_svc(), self.ns.input)
 
-    def token_fetch(self, format, data, **_):
-        self._get_oauth(format, data).fetch_token()
+    @memoized
+    def offers_cmd(self):
+        return OffersCommand(self.offers_svc(), self.metadata_dao(), self.filter_svc(), self.timestamp())
+
+    @memoized
+    def metadata_dao(self):
+        return carscanner.dao.MetadataDao(self.data_manager().cars_data())
+
+    @memoized
+    def offers_svc(self):
+        return carscanner.OfferService(
+            self.allegro(),
+            self.criteria_dao(),
+            self.car_offers_builder(),
+            self.car_offer_dao(),
+            self.filter_svc(),
+            self.timestamp()
+        )
+
+    @memoized
+    def filter_svc(self):
+        return carscanner.FilterService(
+            self.allegro(),
+            self.filter_dao(),
+            self.criteria_dao())
+
+    @memoized
+    def filter_dao(self):
+        return carscanner.dao.FilterDao(self.data_manager().mem_db())
+
+    @memoized
+    def car_offers_builder(self):
+        return carscanner.CarOffersBuilder(self.voivodeship_dao(), self.car_makemodel_dao(), self.timestamp())
+
+    @memoized
+    def voivodeship_dao(self):
+        return carscanner.dao.VoivodeshipDao(self.data_manager().static_data())
+
+    @memoized
+    def car_offer_dao(self):
+        return carscanner.dao.CarOfferDao(self.data_manager().cars_data())
+
+    @memoized
+    def criteria_dao(self):
+        return carscanner.dao.CriteriaDao(self.data_manager().static_data())
+
+    @memoized
+    def categories_svc(self):
+        return carscanner.GetCategories(self.allegro(), self.criteria_dao())
+
+    @memoized
+    def car_makemodel_svc(self):
+        return carscanner.CarMakeModelService(self.car_makemodel_dao())
+
+    @memoized
+    def car_makemodel_dao(self):
+        return carscanner.dao.CarMakeModelDao(self.data_manager().static_data())
+
+    def data_manager(self):
+        if not self._data_manager:
+            self._data_manager = carscanner.data.DataManager(self.ns.data)
+        return self._data_manager
+
+    @memoized
+    def timestamp(self):
+        return datetime.datetime.utcnow()
+
+    @memoized
+    def voivodeship_svc(self):
+        return carscanner.VoivodeshipService(self.allegro(), self.voivodeship_dao())
 
 
 if __name__ == '__main__':
-    carscanner.configure_logging()
-    CommandLine()
+    carscanner.utils.configure_logging()
+    CommandLine().start()

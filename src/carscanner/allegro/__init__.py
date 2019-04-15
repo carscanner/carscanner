@@ -1,29 +1,26 @@
-import os
+import types
 
 import allegro_api
 import allegro_pl
 
-from .auth import AuthorizationCodeAuth, EnvironClientCodeStore, InsecureTokenStore, YamlClientCodeStore
+from .auth import CarScannerCodeAuth, EnvironClientCodeStore, InsecureTokenStore, YamlClientCodeStore
 
 
 def get_root():
-    root_var = '~/.allegro'
-    root = os.path.expanduser(root_var)
-    auth_dir = os.path.join(root, 'auth')
-    if not os.path.exists(root):
-        os.mkdir(root, 0o700)
-        os.mkdir(auth_dir)
-    return root, auth_dir
+    from pathlib import Path
+    root_dir = Path('~/.carscanner').expanduser()
+    if not root_dir.exists():
+        root_dir.mkdir(0o700)
+    return root_dir
 
 
-root, auth_dir = get_root()
-codes_path = os.path.join(auth_dir, 'allegro.yaml')
-token_path = os.path.join(auth_dir, 'insecure-tokens.yaml')
+root_dir = get_root()
+codes_path = root_dir / 'allegro.yaml'
 
 
 class CarscannerAllegro(allegro_pl.Allegro):
-    def __init__(self, oauth):
-        super().__init__(oauth)
+    def __init__(self, auth: allegro_pl.AllegroAuth):
+        super().__init__(auth)
 
         rest_client = self.rest_api_client()
         webapi_client = self.webapi_client()
@@ -39,7 +36,7 @@ class CarscannerAllegro(allegro_pl.Allegro):
 
         @self.retry
         def get_listing(search_params):
-            return public_offer_service.get_listing(search_params)
+            return public_offer_service.get_listing(search_params, _request_timeout=(30, 30))
 
         self.get_listing = get_listing
         self.get_listing.limit_min = 1
@@ -64,6 +61,13 @@ class CarscannerAllegro(allegro_pl.Allegro):
 
         self.get_category_parameters = get_category_parameters
 
+        @self.retry
+        def get_states_info(self, *args, **kwargs):
+            kwargs['webapiKey'] = self._auth.client_id
+            return webapi_client.service.doGetStatesInfo(*args, **kwargs)
+
+        self.get_states_info = types.MethodType(get_states_info, self)
+
     def get_categories(self, **kwags) -> allegro_api.models.CategoriesDto:
         pass
 
@@ -78,11 +82,5 @@ class CarscannerAllegro(allegro_pl.Allegro):
 
 
 def get_client(code_store, token_store: allegro_pl.TokenStore, allow_fetch=True) -> CarscannerAllegro:
-    if code_store is None:
-        code_store = YamlClientCodeStore()
-
-    if token_store is None:
-        token_store = InsecureTokenStore(token_path)
-
-    auth = AuthorizationCodeAuth(code_store, token_store, allow_fetch)
+    auth = CarScannerCodeAuth(code_store, token_store, allow_fetch)
     return CarscannerAllegro(auth)

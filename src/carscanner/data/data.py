@@ -6,9 +6,7 @@ from .readonly import JSONStorageReadOnly
 
 
 class DataManager:
-
-    def __init__(self, data_dir: str):
-        data_dir = pathlib.Path(data_dir)
+    def __init__(self, data_dir: pathlib.Path):
         self._static_data_path = data_dir / 'static.json'
         self._cars_data_path = data_dir / 'cars.json'
         self._static: tinydb.TinyDB = None

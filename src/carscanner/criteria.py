@@ -1,12 +1,10 @@
-import allegro_pl
-from tinydb import TinyDB
-
-import carscanner.allegro
+from carscanner.allegro import CarscannerAllegro as Allegro
 from carscanner.dao.criteria import CriteriaDao, Criteria
 
 
 class GetCategories:
-    def __init__(self, allegro: allegro_pl.Allegro):
+    def __init__(self, allegro: Allegro, dao: CriteriaDao):
+        self._dao = dao
         self._allegro = allegro
 
     def keep_digging(self, name: str, stack: list):
@@ -53,36 +51,13 @@ class GetCategories:
             if self.keep_digging(sub_cat.name, stack + [cat_name]):
                 self.traverse_cats(result, sub_cat, indent_level + 1, stack + [cat_name])
 
+    def get_categories(self):
+        result = []
+        self.traverse_cats(result)
+        return result
 
-def get_categories():
-    allegro = carscanner.allegro.get_client()
+    def build_criteria(self):
+        cats = self.get_categories()
 
-    result = []
-
-    GetCategories(allegro).traverse_cats(result)
-
-    return result
-
-
-def dump_categories():
-    result = get_categories()
-    from os.path import expanduser as xu
-    with TinyDB(xu('~/.allegro/data/static.json'), indent=2) as db:
-        dao = CriteriaDao(db)
-        dao.purge()
-        dao.insert_multiple([Criteria(cat['category_id']) for cat in result])
-
-
-def print_categories():
-    result = get_categories()
-    import pprint
-    pprint.pprint(result)
-
-
-def criteria_build_cmd(**_):
-    dump_categories()
-
-
-if __name__ == '__main__':
-    dump_categories()
-    # print_categories()
+        self._dao.purge()
+        self._dao.insert_multiple([Criteria(cat['category_id']) for cat in cats])

@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+import typing
 
 import tinydb
 
@@ -11,8 +11,8 @@ class VoivodeshipDao(BaseDao):
         self._tbl: tinydb.database.Table = db.table('voivodeship')
         self._q = tinydb.Query()
 
-    def insert(self, data: dict) -> int:
-        return self._tbl.insert(data)
+    def insert_multiple(self, data: typing.List[dict]) -> typing.List[int]:
+        return self._tbl.insert_multiple(data)
 
     def get_name_by_id(self, id: int) -> str:
         return self._tbl.get(tinydb.Query().id == id)['name']

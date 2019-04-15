@@ -1,3 +1,4 @@
+import datetime
 import logging
 import typing
 from decimal import Decimal
@@ -18,10 +19,10 @@ _KEY_MAKE = 'Marka'
 
 class CarOfferBuilder:
     def __init__(self, offer: allegro_api.models.ListingOffer, voivodeship_dao: VoivodeshipDao,
-                 car_make_model: CarMakeModelDao):
+                 car_make_model: CarMakeModelDao, ts: datetime.datetime):
         self._voivodeship_dao = voivodeship_dao
         self._car_make_model = car_make_model
-        self.c = CarOffer()
+        self.c = CarOffer(first_spotted=ts, last_spotted=ts)
 
         self._update_from_listing_model(offer)
 
@@ -86,21 +87,22 @@ class CarOfferBuilder:
         return {a.attribName: a.attribValues.item for a in attrib_list}
 
     @staticmethod
-    def _get_image(images: typing.List[zeep.xsd.CompoundValue], image_type) -> str:
+    def _get_image(images: typing.List[zeep.xsd.CompoundValue], image_type) -> typing.Optional[str]:
         for img in images:
             if img.imageType == image_type:
                 return img.imageUrl
         else:
             return None
 
-    def _derive_car_model(self, itemInfo: zeep.xsd.CompoundValue):
-        return derive_model(self._car_make_model, self.c.make, itemInfo.itName, itemInfo.itDescription)
+    def _derive_car_model(self, item_info: zeep.xsd.CompoundValue):
+        return derive_model(self._car_make_model, self.c.make, item_info.itName, item_info.itDescription)
 
 
 class CarOffersBuilder:
-    def __init__(self, voivodeship_dao: VoivodeshipDao, car_make_model: CarMakeModelDao):
+    def __init__(self, voivodeship_dao: VoivodeshipDao, car_make_model: CarMakeModelDao, ts: datetime.datetime):
         self._voivodeship_dao = voivodeship_dao
         self._car_make_model = car_make_model
+        self._ts = ts
 
     def to_car_offers(self, offers: typing.List[allegro_api.models.ListingOffer]) -> typing.Dict[str, CarOfferBuilder]:
-        return {i.id: CarOfferBuilder(i, self._voivodeship_dao, self._car_make_model) for i in offers}
+        return {i.id: CarOfferBuilder(i, self._voivodeship_dao, self._car_make_model, self._ts) for i in offers}

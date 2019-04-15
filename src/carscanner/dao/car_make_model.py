@@ -1,6 +1,7 @@
 import typing
 
 from tinydb import TinyDB, where
+from tinydb.database import Table
 
 _TABLE = 'make_model'
 
@@ -8,7 +9,7 @@ _TABLE = 'make_model'
 class CarMakeModelDao:
     def __init__(self, db: TinyDB):
         self._db = db
-        self._tbl = db.table(_TABLE)
+        self._tbl: Table = db.table(_TABLE)
 
     def get_models_by_make(self, make: str) -> typing.List[str]:
         doc = self._tbl.get(where('make') == make.lower())
@@ -19,3 +20,6 @@ class CarMakeModelDao:
 
     def purge(self):
         self._db.purge_table(_TABLE)
+
+    def all(self):
+        return self._tbl.all()

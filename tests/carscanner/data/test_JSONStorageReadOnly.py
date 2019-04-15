@@ -4,7 +4,7 @@ import tempfile
 from tinydb import TinyDB
 from tinydb.database import Table
 from carscanner.data.readonly import JSONStorageReadOnly
-from carscanner import configure_logging
+from carscanner.utils import configure_logging
 
 
 class TestJSONStorageReadOnly(TestCase):

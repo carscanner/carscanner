@@ -1,8 +1,6 @@
 import json
 import typing
-from os.path import expanduser as xu
 
-from tinydb import TinyDB
 from unidecode import unidecode
 
 from carscanner.dao import CarMakeModelDao
@@ -27,17 +25,21 @@ def derive_model(car_make_model: CarMakeModelDao, make: str, name: str, descript
     return max(matches, key=len, default=None)
 
 
-def load_car_list(path: str):
-    with open(path, 'rt') as f:
-        data = json.load(f)
-    with TinyDB(xu('~/.allegro/data/static.json'), indent=2) as db:
-        dao = CarMakeModelDao(db)
-        dao.purge()
-        for item in data:
-            make = unidecode(item['brand'].lower())
-            models = [unidecode(model).lower() for model in item['models']]
-            dao.insert({'make': make, 'models': models})
+class CarMakeModelService:
+    def __init__(self, dao: CarMakeModelDao):
+        self._dao = dao
 
+    def load_car_list(self, path: str):
+        with open(path, 'rt') as f:
+            data = json.load(f)
+            self._dao.purge()
+            for item in data:
+                make = unidecode(item['brand'].lower())
+                models = [unidecode(model).lower() for model in item['models']]
+                self._dao.insert({'make': make, 'models': models})
 
-def carlist_cmd(path, **_):
-    load_car_list(path)
+    def show_car_list(self):
+        for doc in self._dao.all():
+            print(doc['make'])
+            for model in doc['models']:
+                print(' ', model)
