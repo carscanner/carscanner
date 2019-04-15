@@ -1,6 +1,8 @@
 import argparse
 import datetime
+import json
 import pathlib
+import sys
 
 import carscanner
 import carscanner.allegro
@@ -25,7 +27,7 @@ class CommandLine:
                             help='Where to read client codes from. One of %(choices)s. Default is %(default)s')
         subparsers = parser.add_subparsers()
 
-        for c in [TokenCommand, CarListCommand, CriteriaCommand, OffersCommand, VoivodeshipCommand]:
+        for c in [TokenCommand, CarListCommand, CriteriaCommand, OffersCommand, VoivodeshipCommand, FilterCommand]:
             c.build_argparse(subparsers, self._context, parser.print_help)
 
         return parser
@@ -119,6 +121,45 @@ class VoivodeshipCommand:
 
         vs_load_cmd = vs_subparsers.add_parser('load')
         vs_load_cmd.set_defaults(func=lambda: ctx.voivodeship_svc().load_voivodeships())
+
+
+class FilterCommand:
+    @staticmethod
+    def build_argparse(subparsers, ctx, print_help):
+        filter_parser = subparsers.add_parser('filter', help='Manipulate category filters')
+        filter_parser.set_defaults(func=print_help)
+        filter_subparsers = filter_parser.add_subparsers()
+
+        filter_show_cmd: argparse.ArgumentParser = filter_subparsers.add_parser('get')
+        filter_show_cmd.add_argument('--category', '-c', default='ALL', help='Category id. Default is all categories')
+        filter_show_cmd.add_argument('--output', '-o', default='-', help='Output file. use - to output to the standard '
+                                                                         'output (the default)')
+        filter_show_cmd.set_defaults(func=lambda: ctx.filter_cmd().get())
+
+    def __init__(self, filter_svc: carscanner.FilterService, crit_dao: carscanner.dao.CriteriaDao, output_path,
+                 cat_id: str):
+        self.crit_dao = crit_dao
+        self.cat_id = cat_id
+        self.output_path = output_path
+        self.filter_svc = filter_svc
+
+    def get(self):
+        def to_dict(o):
+            return o.to_dict()
+
+        try:
+            if self.output_path == '-':
+                output = sys.stdout
+            else:
+                output = open(self.output_path, 'wt')
+
+            cat_ids = [self.cat_id] if self.cat_id != 'ALL' else [c.category_id for c in self.crit_dao.all()]
+
+            result = {cat_id: self.filter_svc.get_filters(cat_id) for cat_id in cat_ids}
+            json.dump(result, output, default=to_dict, indent=2)
+        finally:
+            if output and output is not sys.stdout:
+                output.close()
 
 
 class Context:
@@ -229,6 +270,10 @@ class Context:
     @memoized
     def voivodeship_svc(self):
         return carscanner.VoivodeshipService(self.allegro(), self.voivodeship_dao())
+
+    @memoized
+    def filter_cmd(self):
+        return FilterCommand(self.filter_svc(), self.criteria_dao(), self.ns.output, self.ns.category)
 
 
 if __name__ == '__main__':

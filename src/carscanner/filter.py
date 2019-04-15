@@ -14,7 +14,7 @@ class FilterService:
 
     def load_filters(self):
         for crit in self._crit_dao.all():
-            filters = self._get_filters(crit.category_id)
+            filters = self.get_filters(crit.category_id)
             for filt in filters:
                 filt = FilterService._filter_to_dict(crit.category_id, filt)
                 self._filter_dao.insert(filt)
@@ -25,7 +25,7 @@ class FilterService:
         param_dict['category_id'] = cat_id
         return param_dict
 
-    def _get_filters(self, cat_id) -> typing.List[allegro_api.models.ListingResponseFilters]:
+    def get_filters(self, cat_id: str) -> typing.List[allegro_api.models.ListingResponseFilters]:
         return self._allegro.get_listing({
             'category.id': cat_id,
             'limit': self._allegro.get_listing.limit_min,
