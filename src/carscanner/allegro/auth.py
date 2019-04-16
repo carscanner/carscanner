@@ -76,8 +76,13 @@ class InsecureTokenStore(allegro_pl.TokenStore):
     def __init__(self, path: pathlib.Path):
         super().__init__()
         self._path = path
-        with open(path, 'rt') as f:
-            self.update_from_dict(yaml.safe_load(f))
+        try:
+            with open(path, 'rt') as f:
+                self.update_from_dict(yaml.safe_load(f))
+        except FileNotFoundError as x:
+            logger.debug('%s %s', x.strerror, x.filename)
+        except OSError as x:
+            logger.debug('Could not read token file', x)
 
     def save(self):
         super().save()
