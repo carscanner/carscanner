@@ -25,6 +25,7 @@ class CommandLine:
                             help='Database directory. Default is %(default)s')
         parser.add_argument('--environment', '-e', default=ENV_LOCAL, choices=[ENV_LOCAL, ENV_TRAVIS], metavar='env',
                             help='Where to read client codes from. One of %(choices)s. Default is %(default)s')
+        parser.add_argument('--version', '-v', action='version', version=carscanner.__version__)
         subparsers = parser.add_subparsers()
 
         for c in [TokenCommand, CarListCommand, CriteriaCommand, OffersCommand, VoivodeshipCommand, FilterCommand]:
@@ -276,6 +277,10 @@ class Context:
         return FilterCommand(self.filter_svc(), self.criteria_dao(), self.ns.output, self.ns.category)
 
 
-if __name__ == '__main__':
+def main():
     carscanner.utils.configure_logging()
     CommandLine().start()
+
+
+if __name__ == '__main__':
+    main()
