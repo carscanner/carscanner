@@ -344,6 +344,14 @@ python-versions = "*"
 version = "3.13.0"
 
 [[package]]
+category = "dev"
+description = "Python Library for Tom's Obvious, Minimal Language"
+name = "toml"
+optional = false
+python-versions = "*"
+version = "0.10.0"
+
+[[package]]
 category = "main"
 description = "Ultra fast JSON encoder and decoder for Python"
 name = "ujson"
@@ -399,7 +407,7 @@ requests-toolbelt = ">=0.7.1"
 six = ">=1.9.0"
 
 [metadata]
-content-hash = "73e1f0f710b2ef43873fca7047c1651eaf152eb98cc071221ba22754f6f46d3c"
+content-hash = "13e2974ff1fc1dc5fe4d130715eae5432793b94e886e0976c456133e1fdd9214"
 python-versions = "^3.7"
 
 [metadata.hashes]
@@ -437,6 +445,7 @@ six = ["3350809f0555b11f552448330d0b52d5f24c91a322ea4a15ef22629740f3761c", "d16a
 tempora = ["cb60b1d2b1664104e307f8e5269d7f4acdb077c82e35cd57246ae14a3427d2d6", "d28a03d2f64ee81aec6e6bff374127ef306fe00c1b7e27c7ff1618344221a699"]
 tenacity = ["a0c3c5f7ae0c33f5556c775ca059c12d6fd8ab7121613a713e8b7d649908571b", "b87c1934daa0b2ccc7db153c37b8bf91d12f165936ade8628e7b962b92dc7705"]
 tinydb = ["260b1f69168a24518af63f0270c72dc026476607016a0105aef6a966d8d2fbdc", "a05c4c81e6e867c4f8a2e51c5236d0d897019aa5e9296f5947455b0bdd3c519d"]
+toml = ["229f81c57791a41d65e399fc06bf0848bab550a9dfd5ed66df18ce5f05e73d5c", "235682dd292d5899d361a811df37e04a8828a5b1da3115886b73cf81ebc9100e", "f1db651f9657708513243e61e6cc67d101a39bad662eaa9b5546f789338e07a3"]
 ujson = ["f66073e5506e91d204ab0c614a148d5aa938bdbf104751be66f8ad7a222f5f86"]
 unidecode = ["092cdf7ad9d1052c50313426a625b717dab52f7ac58f859e09ea020953b1ad8f", "8b85354be8fd0c0e10adbf0675f6dc2310e56fda43fa8fe049123b6c475e52fb"]
 urllib3 = ["4c291ca23bbb55c76518905869ef34bdd5f0e46af7afe6861e8375643ffee1a0", "9a247273df709c4fedb38c711e44292304f73f39ab01beda9f6b9fc375669ac3"]

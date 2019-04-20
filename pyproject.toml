@@ -2,7 +2,7 @@
 name = "carscanner"
 version = "1.2.3"
 description = "Car offer scanner"
-authors = ["Rafal Krupinski <rkrupinski+github@gmail.com>"]
+authors = ["Matte Silver"]
 license = "MIT"
 
 [tool.poetry.dependencies]
@@ -16,6 +16,7 @@ unidecode = "^1.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^4.4"
+toml = "^0.10.0"
 
 [tool.poetry.scripts]
 carscanner = 'carscanner.cmd:main'
