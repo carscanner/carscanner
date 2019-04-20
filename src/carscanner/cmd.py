@@ -25,6 +25,8 @@ class CommandLine:
                             help='Database directory. Default is %(default)s')
         parser.add_argument('--environment', '-e', default=ENV_LOCAL, choices=[ENV_LOCAL, ENV_TRAVIS], metavar='env',
                             help='Where to read client codes from. One of %(choices)s. Default is %(default)s')
+        parser.add_argument('--no-fetch', '--nf', action='store_true', default=False,
+                            help="Don't fetch token if it's expired")
         parser.add_argument('--version', '-v', action='version', version=carscanner.__version__)
         subparsers = parser.add_subparsers()
 
@@ -185,7 +187,7 @@ class Context:
         ts = carscanner.allegro.InsecureTokenStore(self.ns.data / 'tokens.yaml')
         if self.ns.environment == ENV_LOCAL:
             cs = carscanner.allegro.YamlClientCodeStore(carscanner.allegro.codes_path)
-            allow_fetch = True
+            allow_fetch = not self.ns.no_fetch
         elif self.ns.environment == ENV_TRAVIS:
             cs = carscanner.allegro.EnvironClientCodeStore()
             allow_fetch = False
