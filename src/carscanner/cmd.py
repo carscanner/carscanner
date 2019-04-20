@@ -9,6 +9,7 @@ import carscanner.allegro
 import carscanner.dao
 import carscanner.data
 from carscanner.utils import memoized
+from allegro_pl import TokenError
 
 ENV_TRAVIS = 'travis'
 ENV_LOCAL = 'local'
@@ -25,6 +26,8 @@ class CommandLine:
                             help='Database directory. Default is %(default)s')
         parser.add_argument('--environment', '-e', default=ENV_LOCAL, choices=[ENV_LOCAL, ENV_TRAVIS], metavar='env',
                             help='Where to read client codes from. One of %(choices)s. Default is %(default)s')
+        parser.add_argument('--no-fetch', '--nf', action='store_true', default=False,
+                            help="Don't fetch token if it's expired")
         parser.add_argument('--version', '-v', action='version', version=carscanner.__version__)
         subparsers = parser.add_subparsers()
 
@@ -35,11 +38,16 @@ class CommandLine:
 
     def start(self):
         ns = self._parser.parse_args()
-        self._context.ns = ns
         ns.data = ns.data.expanduser()
+        self._context.ns = ns
 
-        ns.func()
-        self._context.close()
+        try:
+            ns.func()
+        except TokenError as x:
+            print('Invalid token, fetch disabled. Exiting', x.args)
+            raise
+        finally:
+            self._context.close()
 
 
 class TokenCommand:
@@ -185,7 +193,7 @@ class Context:
         ts = carscanner.allegro.InsecureTokenStore(self.ns.data / 'tokens.yaml')
         if self.ns.environment == ENV_LOCAL:
             cs = carscanner.allegro.YamlClientCodeStore(carscanner.allegro.codes_path)
-            allow_fetch = True
+            allow_fetch = not self.ns.no_fetch
         elif self.ns.environment == ENV_TRAVIS:
             cs = carscanner.allegro.EnvironClientCodeStore()
             allow_fetch = False

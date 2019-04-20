@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "carscanner"
-version = "1.2.2"
+version = "1.2.3"
 description = "Car offer scanner"
-authors = ["Rafal Krupinski <rkrupinski+github@gmail.com>"]
+authors = ["Matte Silver"]
 license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.7"
-mattes-allegro-pl = "^0.5.0"
+mattes-allegro-pl = "^0.6.0"
 CherryPy = "^18.1"
 PyYAML = "^5.1"
 tinydb = "^3.13"
@@ -16,6 +16,7 @@ unidecode = "^1.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^4.4"
+toml = "^0.10.0"
 
 [tool.poetry.scripts]
 carscanner = 'carscanner.cmd:main'
