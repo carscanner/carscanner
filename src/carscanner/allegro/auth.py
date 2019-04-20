@@ -24,10 +24,10 @@ class CarScannerCodeAuth(allegro_pl.AuthorizationCodeAuth):
         self._allow_fetch = allow_fetch
 
     def fetch_token(self):
+        logger.debug('Fetch token')
         if not self._allow_fetch:
-            raise Exception('Fetching token disabled')
+            raise allegro_pl.TokenError('Fetching token disabled')
 
-        super().fetch_token()
         cherrypy.tree.mount(
             WebAuth(self._cs.client_secret, self._oauth, allegro_pl.URL_AUTHORIZE, allegro_pl.URL_TOKEN,
                     self._on_token_updated))
@@ -85,7 +85,7 @@ class InsecureTokenStore(allegro_pl.TokenStore):
             logger.debug('Could not read token file', x)
 
     def save(self):
-        super().save()
+        logger.debug('Save tokens')
         with open(self._path, 'wt') as f:
             yaml.safe_dump(self.to_dict(), f)
 

@@ -9,6 +9,7 @@ import carscanner.allegro
 import carscanner.dao
 import carscanner.data
 from carscanner.utils import memoized
+from allegro_pl import TokenError
 
 ENV_TRAVIS = 'travis'
 ENV_LOCAL = 'local'
@@ -37,11 +38,16 @@ class CommandLine:
 
     def start(self):
         ns = self._parser.parse_args()
-        self._context.ns = ns
         ns.data = ns.data.expanduser()
+        self._context.ns = ns
 
-        ns.func()
-        self._context.close()
+        try:
+            ns.func()
+        except TokenError as x:
+            print('Invalid token, fetch disabled. Exiting', x.args)
+            raise
+        finally:
+            self._context.close()
 
 
 class TokenCommand:
