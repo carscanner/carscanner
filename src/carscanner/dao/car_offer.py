@@ -14,8 +14,8 @@ _K_LAST_SPOTTED = 'last_spotted'
 
 @dataclasses.dataclass
 class CarOffer:
-    first_spotted: datetime.date
-    last_spotted: datetime.date
+    first_spotted: datetime.datetime
+    last_spotted: datetime.datetime
     id: int = None
     make: str = None
     model: str = None

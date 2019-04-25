@@ -1,15 +1,14 @@
 import datetime
 import functools
 import logging
-import time
 
 
-def datetime_to_unix(dt: datetime.date):
-    return int(time.mktime(dt.timetuple()))
+def datetime_to_unix(dt: datetime.datetime) -> int:
+    return int(dt.timestamp())
 
 
-def unix_to_datetime(timestamp):
-    return datetime.datetime.fromtimestamp(int(timestamp))
+def unix_to_datetime(timestamp: int) -> datetime:
+    return datetime.datetime.fromtimestamp(timestamp, datetime.timezone.utc)
 
 
 def dump_file(data, path: str) -> None:
