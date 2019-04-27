@@ -108,6 +108,10 @@ class OffersCommand:
         offers_update_opt = offers_subparsers.add_parser('update')
         offers_update_opt.set_defaults(func=lambda: ctx.offers_cmd().update())
 
+        offers_export_opt = offers_subparsers.add_parser('export')
+        offers_export_opt.set_defaults(func=lambda: ctx.offer_export_svc().export(ctx.ns.output))
+        offers_export_opt.add_argument('--output', '-o', type=pathlib.Path, help='Output json file', metavar='path')
+
     def __init__(self, offer_svc, meta_dao, filter_svc: carscanner.FilterService, ts: datetime.datetime):
         self.ts = ts
         self.filter_svc = filter_svc
@@ -283,6 +287,9 @@ class Context:
     @memoized
     def filter_cmd(self):
         return FilterCommand(self.filter_svc(), self.criteria_dao(), self.ns.output, self.ns.category)
+
+    def offer_export_svc(self):
+        return carscanner.offers.OffersExporter(self.car_offer_dao(), self.metadata_dao())
 
 
 def main():
