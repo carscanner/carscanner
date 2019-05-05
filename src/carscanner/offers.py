@@ -4,6 +4,7 @@ import typing
 
 import allegro_api.models
 import zeep
+import zeep.exceptions
 
 from .allegro import CarscannerAllegro
 from carscanner.car_offer import CarOffersBuilder, CarOfferBuilder
@@ -90,5 +91,13 @@ class OfferService:
         chunks_count = ceil(len(offer_ids) / self._allegro.get_items_info.items_limit)
         for chunk in chunks(offer_ids, self._allegro.get_items_info.items_limit):
             logger.info('get_items_info: chunk %d out of %d', chunk_no, chunks_count)
-            yield self._allegro.get_items_info(itemsIdArray=chunk, getDesc=1, getImageUrl=1, getAttribs=1)
+            try:
+                yield self._allegro.get_items_info(chunk, True, True, True)
+            except zeep.exceptions.TransportError:
+                # https://github.com/allegro/allegro-api/issues/1585
+                for item_id in chunk:
+                    try:
+                        yield self._allegro.get_items_info([item_id], True, True, True)
+                    except zeep.exceptions.TransportError as x2:
+                        logger.warning('Could not fetch item (%s) info: %s', item_id, x2)
             chunk_no += 1
