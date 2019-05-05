@@ -15,7 +15,9 @@ ujson = "^1.35"
 unidecode = "^1.0"
 
 [tool.poetry.dev-dependencies]
+codecov = "^2.0"
 pytest = "^4.4"
+pytest-cov = "^2.7"
 toml = "^0.10.0"
 
 [tool.poetry.scripts]
