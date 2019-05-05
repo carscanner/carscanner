@@ -4,12 +4,13 @@ import json
 import pathlib
 import sys
 
+import allegro_pl
+
 import carscanner
 import carscanner.allegro
 import carscanner.dao
 import carscanner.data
 from carscanner.utils import memoized
-from allegro_pl import TokenError
 
 ENV_TRAVIS = 'travis'
 ENV_LOCAL = 'local'
@@ -43,7 +44,7 @@ class CommandLine:
 
         try:
             ns.func()
-        except TokenError as x:
+        except allegro_pl.TokenError as x:
             print('Invalid token, fetch disabled. Exiting', x.args)
             raise
         finally:
@@ -95,7 +96,7 @@ class CriteriaCommand:
         criteria_subparsers = criteria_parser.add_subparsers()
 
         criteria_build_opt = criteria_subparsers.add_parser('build', help='Build criteria database')
-        criteria_build_opt.set_defaults(func=lambda: ctx.categories_svc().get_categories())
+        criteria_build_opt.set_defaults(func=lambda: ctx.categories_svc().build_criteria())
 
 
 class OffersCommand:
@@ -145,12 +146,12 @@ class FilterCommand:
                                                                          'output (the default)')
         filter_show_cmd.set_defaults(func=lambda: ctx.filter_cmd().get())
 
-    def __init__(self, filter_svc: carscanner.FilterService, crit_dao: carscanner.dao.CriteriaDao, output_path,
+    def __init__(self, svc: carscanner.allegro.CarscannerAllegro, crit_dao: carscanner.dao.CriteriaDao, output_path,
                  cat_id: str):
         self.crit_dao = crit_dao
         self.cat_id = cat_id
         self.output_path = output_path
-        self.filter_svc = filter_svc
+        self.svc = svc
 
     def get(self):
         def to_dict(o):
@@ -164,7 +165,7 @@ class FilterCommand:
 
             cat_ids = [self.cat_id] if self.cat_id != 'ALL' else [c.category_id for c in self.crit_dao.all()]
 
-            result = {cat_id: self.filter_svc.get_filters(cat_id) for cat_id in cat_ids}
+            result = {cat_id: self.svc.get_filters(cat_id) for cat_id in cat_ids}
             json.dump(result, output, default=to_dict, indent=2)
         finally:
             if output and output is not sys.stdout:
@@ -203,7 +204,7 @@ class Context:
 
     @memoized
     def allegro(self):
-        return carscanner.allegro.CarscannerAllegro(self.auth())
+        return carscanner.allegro.CarscannerAllegro(self.allegro_client())
 
     @memoized
     def carlist_cmd(self):
@@ -282,7 +283,11 @@ class Context:
 
     @memoized
     def filter_cmd(self):
-        return FilterCommand(self.filter_svc(), self.criteria_dao(), self.ns.output, self.ns.category)
+        return FilterCommand(self.allegro(), self.criteria_dao(), self.ns.output, self.ns.category)
+
+    @memoized
+    def allegro_client(self):
+        return allegro_pl.Allegro(self.auth())
 
 
 def main():

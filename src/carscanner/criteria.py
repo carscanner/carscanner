@@ -1,9 +1,9 @@
-from carscanner.allegro import CarscannerAllegro as Allegro
+from .allegro import CarscannerAllegro
 from carscanner.dao.criteria import CriteriaDao, Criteria
 
 
 class GetCategories:
-    def __init__(self, allegro: Allegro, dao: CriteriaDao):
+    def __init__(self, allegro: CarscannerAllegro, dao: CriteriaDao):
         self._dao = dao
         self._allegro = allegro
 
@@ -18,16 +18,7 @@ class GetCategories:
     def select_as_criteria(self, name: str, stack: list):
         return name in ['Dostawcze (do 3.5 t)', 'Osobowe']
 
-    def get_cats(self, parent_id=None):
-        """Pass parent_if argument only if it isn't None as the rest client doesn't accept None"""
-        if parent_id is not None:
-            return self._allegro.get_categories(parent_id=parent_id)
-        else:
-            return self._allegro.get_categories()
-
     def traverse_cats(self, result: list, cat=None, indent_level=0, stack=None):
-        # indent = ' ' * (2 * indent_level)
-
         if stack is None:
             stack = []
 
@@ -45,7 +36,7 @@ class GetCategories:
             this = {'category_id': cat_id, 'cat_name': cat_name}
             result.append(this)
 
-        cats = self.get_cats(cat_id)
+        cats = self._allegro.get_categories(cat_id)
 
         for sub_cat in cats.categories:
             if self.keep_digging(sub_cat.name, stack + [cat_name]):
