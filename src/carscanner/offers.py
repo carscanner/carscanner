@@ -2,10 +2,10 @@ import datetime
 import logging
 import typing
 
-import allegro_api.api
+import allegro_api.models
 import zeep
 
-from carscanner.allegro import CarscannerAllegro as Allegro
+from .allegro import CarscannerAllegro
 from carscanner.car_offer import CarOffersBuilder, CarOfferBuilder
 from carscanner.dao import Criteria, CarOfferDao
 from carscanner.filter import FilterService
@@ -27,7 +27,7 @@ class OfferService:
         'sort': '-startTime'
     }
 
-    def __init__(self, allegro: Allegro, criteria_dao, car_offers_builder: CarOffersBuilder, car_offer_dao,
+    def __init__(self, allegro: CarscannerAllegro, criteria_dao, car_offers_builder: CarOffersBuilder, car_offer_dao,
                  filter_service, ts):
         self._allegro = allegro
 
@@ -40,7 +40,7 @@ class OfferService:
     def _get_offers_for_criteria(self, crit: Criteria) -> typing.Iterable[typing.List[allegro_api.models.ListingOffer]]:
         offset = 0
         while True:
-            data: allegro_api.models.ListingResponse = self._allegro.get_listing(self._search_params(crit, offset))
+            data = self._allegro.get_listing(self._search_params(crit, offset))
 
             result = data.items.promoted + data.items.regular
 
@@ -57,7 +57,7 @@ class OfferService:
         result.update(self.filter_service.transform_filters(crit.category_id, OfferService._filter_template))
         result['category.id'] = crit.category_id
         result['offset'] = str(offset)
-        result['limit'] = self._allegro.get_listing.limit_max
+        result['limit'] = str(self._allegro.get_listing.limit_max)
 
         return result
 
