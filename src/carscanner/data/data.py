@@ -2,7 +2,7 @@ import pathlib
 
 import tinydb
 
-from .readonly import JSONStorageReadOnly
+from .readonly import ReadOnlyMiddleware
 
 
 class DataManager:
@@ -15,7 +15,8 @@ class DataManager:
 
     def static_data(self) -> tinydb.TinyDB:
         if self._static is None:
-            self._static = tinydb.TinyDB(self._static_data_path, storage=JSONStorageReadOnly)
+            storage = ReadOnlyMiddleware()
+            self._static = tinydb.TinyDB(storage=storage, path=self._static_data_path, indent=2)
         return self._static
 
     def cars_data(self) -> tinydb.TinyDB:
