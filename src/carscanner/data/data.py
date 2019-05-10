@@ -30,9 +30,9 @@ class DataManager:
         return self._mem
 
     def close(self):
-        if self._static:
+        if self._static is not None:
             self._static.close()
-        if self._cars:
+        if self._cars is not None:
             self._cars.close()
-        if self._mem:
+        if self._mem is not None:
             self._mem.close()
