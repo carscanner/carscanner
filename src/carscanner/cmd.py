@@ -47,7 +47,7 @@ class CommandLine:
         except allegro_pl.TokenError as x:
             print('Invalid token, fetch disabled. Exiting', x.args)
             raise
-        finally:
+        else:
             self._context.close()
 
 
