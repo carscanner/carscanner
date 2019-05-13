@@ -9,7 +9,7 @@ import zeep.exceptions
 
 from .allegro import CarscannerAllegro
 from carscanner.car_offer import CarOffersBuilder, CarOfferBuilder
-from carscanner.dao import Criteria, CarOfferDao
+from carscanner.dao import CarOffer, CarOfferDao, Criteria, MetadataDao
 from carscanner.filter import FilterService
 from carscanner.utils import chunks, datetime_to_unix
 
