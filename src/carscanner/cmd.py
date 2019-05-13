@@ -10,6 +10,7 @@ import carscanner
 import carscanner.allegro
 import carscanner.dao
 import carscanner.data
+import carscanner.service
 from carscanner.utils import memoized
 
 ENV_TRAVIS = 'travis'
@@ -293,7 +294,7 @@ class Context:
 
     @memoized
     def timestamp(self):
-        return datetime.datetime.utcnow()
+        return carscanner.utils.now()
 
     @memoized
     def voivodeship_svc(self):
@@ -304,7 +305,7 @@ class Context:
         return allegro_pl.Allegro(self.auth())
 
     def offer_export_svc(self):
-        return carscanner.offers.OffersExporter(self.car_offer_dao(), self.metadata_dao())
+        return carscanner.service.ExportService(self.car_offer_dao(), self.metadata_dao())
 
 
 def main():
