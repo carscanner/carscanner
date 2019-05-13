@@ -3,12 +3,13 @@ import logging
 import pathlib
 import typing
 
-import allegro_api.api
+import allegro_api.models
 import zeep
+import zeep.exceptions
 
-from carscanner.allegro import CarscannerAllegro as Allegro
-from carscanner.car_offer import CarOffer, CarOffersBuilder, CarOfferBuilder
-from carscanner.dao import Criteria, CarOfferDao, MetadataDao
+from .allegro import CarscannerAllegro
+from carscanner.car_offer import CarOffersBuilder, CarOfferBuilder
+from carscanner.dao import Criteria, CarOfferDao
 from carscanner.filter import FilterService
 from carscanner.utils import chunks, datetime_to_unix
 
@@ -28,7 +29,7 @@ class OfferService:
         'sort': '-startTime'
     }
 
-    def __init__(self, allegro: Allegro, criteria_dao, car_offers_builder: CarOffersBuilder, car_offer_dao,
+    def __init__(self, allegro: CarscannerAllegro, criteria_dao, car_offers_builder: CarOffersBuilder, car_offer_dao,
                  filter_service, ts):
         self._allegro = allegro
 
@@ -41,7 +42,7 @@ class OfferService:
     def _get_offers_for_criteria(self, crit: Criteria) -> typing.Iterable[typing.List[allegro_api.models.ListingOffer]]:
         offset = 0
         while True:
-            data: allegro_api.models.ListingResponse = self._allegro.get_listing(self._search_params(crit, offset))
+            data = self._allegro.get_listing(self._search_params(crit, offset))
 
             result = data.items.promoted + data.items.regular
 
@@ -58,7 +59,7 @@ class OfferService:
         result.update(self.filter_service.transform_filters(crit.category_id, OfferService._filter_template))
         result['category.id'] = crit.category_id
         result['offset'] = str(offset)
-        result['limit'] = self._allegro.get_listing.limit_max
+        result['limit'] = str(self._allegro.get_listing.limit_max)
 
         return result
 
@@ -91,7 +92,15 @@ class OfferService:
         chunks_count = ceil(len(offer_ids) / self._allegro.get_items_info.items_limit)
         for chunk in chunks(offer_ids, self._allegro.get_items_info.items_limit):
             logger.info('get_items_info: chunk %d out of %d', chunk_no, chunks_count)
-            yield self._allegro.get_items_info(itemsIdArray=chunk, getDesc=1, getImageUrl=1, getAttribs=1)
+            try:
+                yield self._allegro.get_items_info(chunk, True, True, True)
+            except zeep.exceptions.TransportError:
+                # https://github.com/allegro/allegro-api/issues/1585
+                for item_id in chunk:
+                    try:
+                        yield self._allegro.get_items_info([item_id], True, True, True)
+                    except zeep.exceptions.TransportError as x2:
+                        logger.warning('Could not fetch item (%s) info: %s', item_id, x2)
             chunk_no += 1
 
 
