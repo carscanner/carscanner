@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "carscanner"
-version = "1.2.5"
+version = "1.2.6"
 description = "Car offer scanner"
 authors = ["Matte Silver"]
 license = "MIT"

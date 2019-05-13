@@ -47,7 +47,7 @@ class CommandLine:
         except allegro_pl.TokenError as x:
             print('Invalid token, fetch disabled. Exiting', x.args)
             raise
-        finally:
+        else:
             self._context.close()
 
 
@@ -72,9 +72,13 @@ class CarListCommand:
         carlist_cmd.set_defaults(func=print_help)
         carlist_subparsers = carlist_cmd.add_subparsers()
 
+        def update():
+            ctx.modify_static = True
+            ctx.car_makemodel_svc().load_car_list(ctx.ns.input)
+
         carlist_update_cmd = carlist_subparsers.add_parser('update', help='Load car makes & models from json file to '
                                                                           'the database')
-        carlist_update_cmd.set_defaults(func=lambda: ctx.carlist_cmd().update())
+        carlist_update_cmd.set_defaults(func=update)
         carlist_update_cmd.add_argument('--input', '-i', type=pathlib.Path, help='Input json file', metavar='path')
 
         carlist_show_cmd = carlist_subparsers.add_parser('show')
@@ -95,8 +99,12 @@ class CriteriaCommand:
         criteria_parser.set_defaults(func=print_help)
         criteria_subparsers = criteria_parser.add_subparsers()
 
+        def build():
+            ctx.modify_static = True
+            ctx.categories_svc().build_criteria()
+
         criteria_build_opt = criteria_subparsers.add_parser('build', help='Build criteria database')
-        criteria_build_opt.set_defaults(func=lambda: ctx.categories_svc().build_criteria())
+        criteria_build_opt.set_defaults(func=build)
 
 
 class OffersCommand:
@@ -129,8 +137,12 @@ class VoivodeshipCommand:
         vs_parser.set_defaults(func=print_help)
         vs_subparsers = vs_parser.add_subparsers()
 
+        def load():
+            ctx.modify_static = True
+            ctx.voivodeship_svc().load_voivodeships()
+
         vs_load_cmd = vs_subparsers.add_parser('load')
-        vs_load_cmd.set_defaults(func=lambda: ctx.voivodeship_svc().load_voivodeships())
+        vs_load_cmd.set_defaults(func=load)
 
 
 class FilterCommand:
@@ -144,28 +156,25 @@ class FilterCommand:
         filter_show_cmd.add_argument('--category', '-c', default='ALL', help='Category id. Default is all categories')
         filter_show_cmd.add_argument('--output', '-o', default='-', help='Output file. use - to output to the standard '
                                                                          'output (the default)')
-        filter_show_cmd.set_defaults(func=lambda: ctx.filter_cmd().get())
+        filter_show_cmd.set_defaults(func=lambda: FilterCommand.get(ctx))
 
-    def __init__(self, svc: carscanner.allegro.CarscannerAllegro, crit_dao: carscanner.dao.CriteriaDao, output_path,
-                 cat_id: str):
-        self.crit_dao = crit_dao
-        self.cat_id = cat_id
-        self.output_path = output_path
-        self.svc = svc
+    @staticmethod
+    def get(ctx):
+        output_path = ctx.ns.output
+        cat_id = ctx.ns.category
 
-    def get(self):
         def to_dict(o):
             return o.to_dict()
 
         try:
-            if self.output_path == '-':
+            if output_path == '-':
                 output = sys.stdout
             else:
-                output = open(self.output_path, 'wt')
+                output = open(output_path, 'wt')
 
-            cat_ids = [self.cat_id] if self.cat_id != 'ALL' else [c.category_id for c in self.crit_dao.all()]
+            cat_ids = [cat_id] if cat_id != 'ALL' else [c.category_id for c in ctx.criteria_dao.all()]
 
-            result = {cat_id: self.svc.get_filters(cat_id) for cat_id in cat_ids}
+            result = {cat_id: ctx.allegro().get_filters(cat_id) for cat_id in cat_ids}
             json.dump(result, output, default=to_dict, indent=2)
         finally:
             if output and output is not sys.stdout:
@@ -176,6 +185,7 @@ class Context:
     def __init__(self):
         self._ns = None
         self._data_manager = None
+        self._modify_static = False
 
     def close(self):
         if self._data_manager:
@@ -188,6 +198,14 @@ class Context:
     @ns.setter
     def ns(self, ns):
         self._ns = ns
+
+    @property
+    def modify_static(self):
+        return self._modify_static
+
+    @modify_static.setter
+    def modify_static(self, value: bool) -> None:
+        self._modify_static = value
 
     @memoized
     def auth(self):
@@ -205,10 +223,6 @@ class Context:
     @memoized
     def allegro(self):
         return carscanner.allegro.CarscannerAllegro(self.allegro_client())
-
-    @memoized
-    def carlist_cmd(self):
-        return CarListCommand(self.car_makemodel_svc(), self.ns.input)
 
     @memoized
     def offers_cmd(self):
@@ -270,7 +284,7 @@ class Context:
 
     def data_manager(self):
         if not self._data_manager:
-            self._data_manager = carscanner.data.DataManager(self.ns.data)
+            self._data_manager = carscanner.data.DataManager(self.ns.data, self.modify_static)
         return self._data_manager
 
     @memoized
@@ -280,10 +294,6 @@ class Context:
     @memoized
     def voivodeship_svc(self):
         return carscanner.VoivodeshipService(self.allegro(), self.voivodeship_dao())
-
-    @memoized
-    def filter_cmd(self):
-        return FilterCommand(self.allegro(), self.criteria_dao(), self.ns.output, self.ns.category)
 
     @memoized
     def allegro_client(self):

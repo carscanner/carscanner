@@ -3,7 +3,7 @@ from unittest import TestCase
 import tempfile
 from tinydb import TinyDB
 from tinydb.database import Table
-from carscanner.data.readonly import JSONStorageReadOnly
+from carscanner.data.readonly import ReadOnlyMiddleware
 from carscanner.utils import configure_logging
 
 
@@ -19,7 +19,7 @@ class TestJSONStorageReadOnly(TestCase):
         data.insert({'a': 'b'})
         db.close()
 
-        ro = TinyDB(path, storage=JSONStorageReadOnly)
+        ro = TinyDB(path, storage=ReadOnlyMiddleware())
         tbl: Table = ro.table('data')
         tbl.insert({'c': 'd'})
         ro.close()
