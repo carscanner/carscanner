@@ -1,6 +1,7 @@
 import datetime
 import functools
 import logging
+import time
 
 
 def datetime_to_unix(dt: datetime.datetime) -> int:
@@ -40,3 +41,7 @@ def memoized(obj):
         return obj.cache
 
     return memoizer
+
+
+def now():
+    return int(time.time())

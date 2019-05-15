@@ -63,3 +63,17 @@ class CarOfferDao:
 
     def update_last_spotted(self, ids: typing.List[str], timestamp: datetime.datetime) -> typing.List[int]:
         return self._tbl.update({_K_LAST_SPOTTED: timestamp}, tinydb.Query().id.one_of(ids))
+
+    def search_by_last_spotted_and_year_gte(self, ts: int, min_year: int) -> typing.List[CarOffer]:
+        q = tinydb.Query()
+        docs = self._tbl.search((q.last_spotted == ts) & (q.year >= min_year))
+        return [CarOffer.from_dict(d) for d in docs]
+
+    def search_by_year_between_and_mileage_lt(self, min_year: int, max_year, mileage: int) -> typing.List[CarOffer]:
+        q = tinydb.Query()
+        docs = self._tbl.search(
+            (q.year >= min_year) &
+            (q.year < max_year) &
+            (q.mileage < mileage)
+        )
+        return [CarOffer.from_dict(d) for d in docs]
