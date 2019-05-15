@@ -47,13 +47,16 @@ class CarOffer:
             result.price = decimal.Decimal(d[_K_PRICE])
         return result
 
+    def is_valid(self) -> bool:
+        return self.year is not None and self.mileage is not None
+
 
 class CarOfferDao:
     def __init__(self, db: tinydb.TinyDB):
         self._tbl: tinydb.database.Table = db.table('car_offer')
 
-    def insert_multiple(self, car_offers: typing.List[CarOffer]) -> typing.List[int]:
-        return self._tbl.insert_multiple([o.to_dict() for o in car_offers])
+    def insert_multiple(self, car_offers: typing.Iterable[CarOffer]) -> typing.List[int]:
+        return self._tbl.insert_multiple(o.to_dict() for o in car_offers)
 
     def _search_ids(self, cond) -> typing.List[str]:
         return [d['id'] for d in self._tbl.search(cond)]
@@ -63,3 +66,17 @@ class CarOfferDao:
 
     def update_last_spotted(self, ids: typing.List[str], timestamp: datetime.datetime) -> typing.List[int]:
         return self._tbl.update({_K_LAST_SPOTTED: timestamp}, tinydb.Query().id.one_of(ids))
+
+    def search_by_last_spotted_and_year_gte(self, ts: int, min_year: int) -> typing.List[CarOffer]:
+        q = tinydb.Query()
+        docs = self._tbl.search((q.last_spotted == ts) & (q.year >= min_year))
+        return [CarOffer.from_dict(d) for d in docs]
+
+    def search_by_year_between_and_mileage_lt(self, min_year: int, max_year, mileage: int) -> typing.List[CarOffer]:
+        q = tinydb.Query()
+        docs = self._tbl.search(
+            (q.year >= min_year) &
+            (q.year < max_year) &
+            (q.mileage < mileage)
+        )
+        return [CarOffer.from_dict(d) for d in docs]

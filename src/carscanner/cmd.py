@@ -10,7 +10,8 @@ import carscanner
 import carscanner.allegro
 import carscanner.dao
 import carscanner.data
-from carscanner.utils import memoized
+import carscanner.service
+from carscanner.utils import memoized, unix_to_datetime
 
 ENV_TRAVIS = 'travis'
 ENV_LOCAL = 'local'
@@ -114,20 +115,29 @@ class OffersCommand:
         offers_parser.set_defaults(func=print_help)
         offers_subparsers = offers_parser.add_subparsers()
 
-        offers_update_opt = offers_subparsers.add_parser('update')
+        offers_update_opt = offers_subparsers.add_parser('update', help='Update and export current offers')
         offers_update_opt.set_defaults(func=lambda: ctx.offers_cmd().update())
 
-    def __init__(self, offer_svc, meta_dao, filter_svc: carscanner.FilterService, ts: datetime.datetime):
+        offers_export_opt = offers_subparsers.add_parser('export')
+        offers_export_opt.set_defaults(func=lambda: ctx.offer_export_svc().export(ctx.ns.output))
+        offers_export_opt.add_argument('--output', '-o', type=pathlib.Path, help='Output json file', metavar='path')
+
+    def __init__(self, offer_svc, meta_dao, filter_svc: carscanner.FilterService,
+                 export_svc: carscanner.service.ExportService, ts: datetime.datetime, data_path: pathlib.Path):
         self.ts = ts
         self.filter_svc = filter_svc
         self.meta_dao: carscanner.dao.MetadataDao = meta_dao
         self.offer_svc: carscanner.OfferService = offer_svc
+        self._export_svc = export_svc
+        self._data_path = data_path
 
     def update(self):
         self.meta_dao.report()
         self.filter_svc.load_filters()
         self.offer_svc.get_offers()
         self.meta_dao.update(self.ts)
+        export_path = self._data_path / 'export.json'
+        self._export_svc.export(export_path)
 
 
 class VoivodeshipCommand:
@@ -225,8 +235,13 @@ class Context:
         return carscanner.allegro.CarscannerAllegro(self.allegro_client())
 
     @memoized
+    def datetime_now(self) -> datetime.datetime:
+        return unix_to_datetime(self.timestamp())
+
+    @memoized
     def offers_cmd(self):
-        return OffersCommand(self.offers_svc(), self.metadata_dao(), self.filter_svc(), self.timestamp())
+        return OffersCommand(self.offers_svc(), self.metadata_dao(), self.filter_svc(), self.offer_export_svc(),
+                             self.datetime_now(), self.ns.data)
 
     @memoized
     def metadata_dao(self):
@@ -240,7 +255,7 @@ class Context:
             self.car_offers_builder(),
             self.car_offer_dao(),
             self.filter_svc(),
-            self.timestamp()
+            self.datetime_now()
         )
 
     @memoized
@@ -256,7 +271,7 @@ class Context:
 
     @memoized
     def car_offers_builder(self):
-        return carscanner.CarOffersBuilder(self.voivodeship_dao(), self.car_makemodel_dao(), self.timestamp())
+        return carscanner.CarOffersBuilder(self.voivodeship_dao(), self.car_makemodel_dao(), self.datetime_now())
 
     @memoized
     def voivodeship_dao(self):
@@ -289,7 +304,7 @@ class Context:
 
     @memoized
     def timestamp(self):
-        return datetime.datetime.utcnow()
+        return carscanner.utils.now()
 
     @memoized
     def voivodeship_svc(self):
@@ -298,6 +313,9 @@ class Context:
     @memoized
     def allegro_client(self):
         return allegro_pl.Allegro(self.auth())
+
+    def offer_export_svc(self):
+        return carscanner.service.ExportService(self.car_offer_dao(), self.metadata_dao())
 
 
 def main():

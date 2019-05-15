@@ -7,8 +7,8 @@ import zeep
 import zeep.exceptions
 
 from .allegro import CarscannerAllegro
-from carscanner.car_offer import CarOffersBuilder, CarOfferBuilder
-from carscanner.dao import Criteria, CarOfferDao
+from .car_offer import CarOffersBuilder
+from carscanner.dao import CarOfferDao, Criteria
 from carscanner.filter import FilterService
 from carscanner.utils import chunks
 
@@ -78,14 +78,14 @@ class OfferService:
 
         # pull their details
         car_offers = self.car_offers_builder.to_car_offers(new_items)
-        for item_info_chunk in self._get_items_info(car_offers):
+        for item_info_chunk in self._get_items_info(list(car_offers.keys())):
             for value in item_info_chunk.arrayItemListInfo.item:
                 item_id = str(value.itemInfo.itId)
-                car_offers[item_id].update_from_item_info_struct(value)
-        self.car_offer_dao.insert_multiple([builder.c for builder in car_offers.values()])
+                self.car_offers_builder.update_from_item_info_struct(car_offers[item_id], value)
 
-    def _get_items_info(self, items: typing.Dict[str, CarOfferBuilder]) -> typing.Iterable[zeep.xsd.CompoundValue]:
-        offer_ids = list(items.keys())
+        self.car_offer_dao.insert_multiple(car for car in car_offers.values() if car.is_valid())
+
+    def _get_items_info(self, offer_ids: typing.List[str]) -> typing.Iterable[zeep.xsd.CompoundValue]:
         chunk_no = 1
         from math import ceil
         chunks_count = ceil(len(offer_ids) / self._allegro.get_items_info.items_limit)
