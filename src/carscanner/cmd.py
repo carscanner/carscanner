@@ -235,7 +235,7 @@ class Context:
         return carscanner.allegro.CarscannerAllegro(self.allegro_client())
 
     @memoized
-    def datetime_now(self):
+    def datetime_now(self) -> datetime.datetime:
         return unix_to_datetime(self.timestamp())
 
     @memoized
