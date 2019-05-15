@@ -1,4 +1,5 @@
 import pathlib
+import typing
 
 from carscanner.dao import CarOffer, CarOfferDao, MetadataDao
 from carscanner.utils import datetime_to_unix
@@ -23,24 +24,17 @@ class ExportService:
         max_age = 20
         min_year = now_year - max_age
 
-        offers = self._dao.search_by_last_spotted_and_year_gte(ts, min_year)
+        # TODO move mileage to the filter in `offers update`,
+        offers = self._dao.search_by_year_between_and_mileage_lt(min_year, now_year, 1_000_000)
 
-        model = ExportModel(ts, min_year, now_year, max_age)
+        model = ExportModel(ts, min_year, now_year, max_age, offers)
 
-        for car in offers:
-            # TODO move this to `offers update`
-            if car.mileage > 1_000_000:
-                continue
-
-            model.update(car)
-
-        import json
         with open(str(output), 'wt') as f:
             json.dump(model.model(), f, indent=2)
 
 
 class ExportModel:
-    def __init__(self, ts: int, min_year: int, now_year: int, max_age):
+    def __init__(self, ts: int, min_year: int, now_year: int, max_age, offers: typing.List[CarOffer]):
         self._ts = ts
         self.min_year = min_year
         self.max_age = max_age
@@ -48,9 +42,13 @@ class ExportModel:
         self.car_series = CarSeriesModel(now_year)
         self.car_details = CarDetailsModel()
 
+        for car in offers:
+            self.average.update(car)
+            if datetime_to_unix(car.last_spotted) >= ts:
+                self.update(car)
+
     def update(self, car: CarOffer):
         self.car_series.update(car)
-        self.average.update(car)
         self.car_details.update(car)
 
     def model(self):
