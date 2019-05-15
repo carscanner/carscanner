@@ -11,7 +11,7 @@ import carscanner.allegro
 import carscanner.dao
 import carscanner.data
 import carscanner.service
-from carscanner.utils import memoized
+from carscanner.utils import memoized, unix_to_datetime
 
 ENV_TRAVIS = 'travis'
 ENV_LOCAL = 'local'
@@ -230,8 +230,12 @@ class Context:
         return carscanner.allegro.CarscannerAllegro(self.allegro_client())
 
     @memoized
+    def datetime_now(self):
+        return unix_to_datetime(self.timestamp())
+
+    @memoized
     def offers_cmd(self):
-        return OffersCommand(self.offers_svc(), self.metadata_dao(), self.filter_svc(), self.timestamp())
+        return OffersCommand(self.offers_svc(), self.metadata_dao(), self.filter_svc(), self.datetime_now())
 
     @memoized
     def metadata_dao(self):
@@ -245,7 +249,7 @@ class Context:
             self.car_offers_builder(),
             self.car_offer_dao(),
             self.filter_svc(),
-            self.timestamp()
+            self.datetime_now()
         )
 
     @memoized
@@ -261,7 +265,7 @@ class Context:
 
     @memoized
     def car_offers_builder(self):
-        return carscanner.CarOffersBuilder(self.voivodeship_dao(), self.car_makemodel_dao(), self.timestamp())
+        return carscanner.CarOffersBuilder(self.voivodeship_dao(), self.car_makemodel_dao(), self.datetime_now())
 
     @memoized
     def voivodeship_dao(self):
