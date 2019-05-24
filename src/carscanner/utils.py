@@ -45,3 +45,7 @@ def memoized(obj):
 
 def now():
     return int(time.time())
+
+
+def join_str(separator: str, *args) -> str:
+    return separator.join(arg for arg in args if arg is not None)
