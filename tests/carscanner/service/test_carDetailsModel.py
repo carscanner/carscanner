@@ -1,7 +1,7 @@
 import decimal
 from unittest import TestCase
 
-from carscanner import CarOffer
+from carscanner.dao import CarOffer
 from carscanner.service.export import CarDetailsModel
 from carscanner.utils import now
 

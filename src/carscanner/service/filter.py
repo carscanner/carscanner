@@ -2,8 +2,8 @@ import typing
 
 import allegro_api
 
-from .allegro import CarscannerAllegro
-from .dao import CriteriaDao, FilterDao
+from carscanner.allegro import CarscannerAllegro
+from carscanner.dao import CriteriaDao, FilterDao
 
 
 class FilterService:

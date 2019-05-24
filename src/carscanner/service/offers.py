@@ -6,11 +6,11 @@ import allegro_api.models
 import zeep
 import zeep.exceptions
 
-from .allegro import CarscannerAllegro
-from .car_offer import CarOffersBuilder
+from carscanner.allegro import CarscannerAllegro
 from carscanner.dao import CarOfferDao, Criteria
-from carscanner.filter import FilterService
 from carscanner.utils import chunks
+from .car_offer import CarOffersBuilder
+from .filter import FilterService
 
 logger = logging.getLogger(__name__)
 
