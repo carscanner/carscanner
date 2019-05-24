@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import allegro_api
 
-from carscanner.filter import FilterService
+from carscanner.service import FilterService
 
 
 class TestFilterService(TestCase):

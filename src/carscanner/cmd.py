@@ -85,7 +85,7 @@ class CarListCommand:
         carlist_show_cmd = carlist_subparsers.add_parser('show')
         carlist_show_cmd.set_defaults(func=lambda: ctx.car_makemodel_svc().show_car_list())
 
-    def __init__(self, service: carscanner.CarMakeModelService, input_file):
+    def __init__(self, service: carscanner.service.CarMakeModelService, input_file):
         self.input = input_file
         self._service = service
 
@@ -122,12 +122,12 @@ class OffersCommand:
         offers_export_opt.set_defaults(func=lambda: ctx.offer_export_svc().export(ctx.ns.output))
         offers_export_opt.add_argument('--output', '-o', type=pathlib.Path, help='Output json file', metavar='path')
 
-    def __init__(self, offer_svc, meta_dao, filter_svc: carscanner.FilterService,
+    def __init__(self, offer_svc, meta_dao, filter_svc: carscanner.service.FilterService,
                  export_svc: carscanner.service.ExportService, ts: datetime.datetime, data_path: pathlib.Path):
         self.ts = ts
         self.filter_svc = filter_svc
         self.meta_dao: carscanner.dao.MetadataDao = meta_dao
-        self.offer_svc: carscanner.OfferService = offer_svc
+        self.offer_svc: carscanner.service.OfferService = offer_svc
         self._export_svc = export_svc
         self._data_path = data_path
 
@@ -249,7 +249,7 @@ class Context:
 
     @memoized
     def offers_svc(self):
-        return carscanner.OfferService(
+        return carscanner.service.OfferService(
             self.allegro(),
             self.criteria_dao(),
             self.car_offers_builder(),
@@ -260,7 +260,7 @@ class Context:
 
     @memoized
     def filter_svc(self):
-        return carscanner.FilterService(
+        return carscanner.service.FilterService(
             self.allegro(),
             self.filter_dao(),
             self.criteria_dao())
@@ -271,7 +271,7 @@ class Context:
 
     @memoized
     def car_offers_builder(self):
-        return carscanner.CarOffersBuilder(self.voivodeship_dao(), self.car_makemodel_dao(), self.datetime_now())
+        return carscanner.service.CarOffersBuilder(self.voivodeship_dao(), self.car_makemodel_dao(), self.datetime_now())
 
     @memoized
     def voivodeship_dao(self):
@@ -287,11 +287,11 @@ class Context:
 
     @memoized
     def categories_svc(self):
-        return carscanner.GetCategories(self.allegro(), self.criteria_dao())
+        return carscanner.service.GetCategories(self.allegro(), self.criteria_dao())
 
     @memoized
     def car_makemodel_svc(self):
-        return carscanner.CarMakeModelService(self.car_makemodel_dao())
+        return carscanner.service.CarMakeModelService(self.car_makemodel_dao())
 
     @memoized
     def car_makemodel_dao(self):
@@ -308,7 +308,7 @@ class Context:
 
     @memoized
     def voivodeship_svc(self):
-        return carscanner.VoivodeshipService(self.allegro(), self.voivodeship_dao())
+        return carscanner.service.VoivodeshipService(self.allegro(), self.voivodeship_dao())
 
     @memoized
     def allegro_client(self):

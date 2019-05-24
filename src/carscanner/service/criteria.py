@@ -1,4 +1,4 @@
-from .allegro import CarscannerAllegro
+from carscanner.allegro import CarscannerAllegro
 from carscanner.dao.criteria import CriteriaDao, Criteria
 
 

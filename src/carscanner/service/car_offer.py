@@ -7,7 +7,7 @@ import allegro_api
 import zeep.xsd
 
 from carscanner.dao import CarMakeModelDao, CarOffer, VoivodeshipDao
-from carscanner.make_model import derive_model
+from .make_model import derive_model
 
 log = logging.getLogger(__name__)
 

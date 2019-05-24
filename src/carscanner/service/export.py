@@ -1,8 +1,9 @@
+import decimal
 import pathlib
 import typing
 
 from carscanner.dao import CarOffer, CarOfferDao, MetadataDao
-from carscanner.utils import datetime_to_unix
+from carscanner.utils import datetime_to_unix, join_str
 
 try:
     import ujson as json
@@ -85,11 +86,16 @@ class CarDetailsModel:
 
     def update(self, car: CarOffer):
         self._model.append({
-            'name': car.name,
-            'link': car.url,
             'image': car.image,
+            'link': car.url,
+            'location': join_str(', ', car.voivodeship, car.location),
+            'make': car.make,
             'mileage': car.mileage,
+            'model': car.model,
+            'name': car.name,
+            'price': int(car.price.to_integral_value(decimal.ROUND_DOWN)),
             'year': car.year,
+            'imported': car.imported,
         })
 
     def model(self) -> list:
