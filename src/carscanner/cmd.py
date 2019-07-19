@@ -17,6 +17,134 @@ ENV_TRAVIS = 'travis'
 ENV_LOCAL = 'local'
 
 
+class Context:
+    def __init__(self):
+        self._ns = None
+        self._data_manager = None
+        self._modify_static = False
+
+    def close(self):
+        if self._data_manager:
+            self._data_manager.close()
+
+    @property
+    def ns(self):
+        return self._ns
+
+    @ns.setter
+    def ns(self, ns):
+        self._ns = ns
+
+    @property
+    def modify_static(self):
+        return self._modify_static
+
+    @modify_static.setter
+    def modify_static(self, value: bool) -> None:
+        self._modify_static = value
+
+    @memoized
+    def auth(self):
+        ts = carscanner.allegro.InsecureTokenStore(self.ns.data / 'tokens.yaml')
+        if self.ns.environment == ENV_LOCAL:
+            cs = carscanner.allegro.YamlClientCodeStore(carscanner.allegro.codes_path)
+            allow_fetch = not self.ns.no_fetch
+        elif self.ns.environment == ENV_TRAVIS:
+            cs = carscanner.allegro.EnvironClientCodeStore()
+            allow_fetch = False
+        else:
+            raise ValueError(self.ns.environment)
+        return carscanner.allegro.CarScannerCodeAuth(cs, ts, allow_fetch)
+
+    @memoized
+    def allegro(self):
+        return carscanner.allegro.CarscannerAllegro(self.allegro_client())
+
+    @memoized
+    def datetime_now(self) -> datetime.datetime:
+        return unix_to_datetime(self.timestamp())
+
+    @memoized
+    def offers_cmd(self):
+        return OffersCommand(self.offers_svc(), self.metadata_dao(), self.filter_svc(), self.offer_export_svc(),
+                             self.datetime_now(), self.ns.data)
+
+    @memoized
+    def metadata_dao(self):
+        return carscanner.dao.MetadataDao(self.data_manager().cars_data())
+
+    @memoized
+    def offers_svc(self):
+        return carscanner.service.OfferService(
+            self.allegro(),
+            self.criteria_dao(),
+            self.car_offers_builder(),
+            self.car_offer_dao(),
+            self.filter_svc(),
+            self.datetime_now()
+        )
+
+    @memoized
+    def filter_svc(self):
+        return carscanner.service.FilterService(
+            self.allegro(),
+            self.filter_dao(),
+            self.criteria_dao())
+
+    @memoized
+    def filter_dao(self):
+        return carscanner.dao.FilterDao(self.data_manager().mem_db())
+
+    @memoized
+    def car_offers_builder(self):
+        return carscanner.service.CarOffersBuilder(self.voivodeship_dao(), self.car_makemodel_dao(),
+                                                   self.datetime_now())
+
+    @memoized
+    def voivodeship_dao(self):
+        return carscanner.dao.VoivodeshipDao(self.data_manager().static_data())
+
+    @memoized
+    def car_offer_dao(self):
+        return carscanner.dao.CarOfferDao(self.data_manager().cars_data())
+
+    @memoized
+    def criteria_dao(self):
+        return carscanner.dao.CriteriaDao(self.data_manager().static_data())
+
+    @memoized
+    def categories_svc(self):
+        return carscanner.service.GetCategories(self.allegro(), self.criteria_dao())
+
+    @memoized
+    def car_makemodel_svc(self):
+        return carscanner.service.CarMakeModelService(self.car_makemodel_dao())
+
+    @memoized
+    def car_makemodel_dao(self):
+        return carscanner.dao.CarMakeModelDao(self.data_manager().static_data())
+
+    def data_manager(self):
+        if not self._data_manager:
+            self._data_manager = carscanner.data.DataManager(self.ns.data, self.modify_static)
+        return self._data_manager
+
+    @memoized
+    def timestamp(self):
+        return carscanner.utils.now()
+
+    @memoized
+    def voivodeship_svc(self):
+        return carscanner.service.VoivodeshipService(self.allegro(), self.voivodeship_dao())
+
+    @memoized
+    def allegro_client(self):
+        return allegro_pl.Allegro(self.auth())
+
+    def offer_export_svc(self):
+        return carscanner.service.ExportService(self.car_offer_dao(), self.metadata_dao())
+
+
 class CommandLine:
     def __init__(self):
         self._context = Context()
@@ -157,7 +285,7 @@ class VoivodeshipCommand:
 
 class FilterCommand:
     @staticmethod
-    def build_argparse(subparsers, ctx, print_help):
+    def build_argparse(subparsers, ctx: Context, print_help):
         filter_parser = subparsers.add_parser('filter', help='Manipulate category filters')
         filter_parser.set_defaults(func=print_help)
         filter_subparsers = filter_parser.add_subparsers()
@@ -169,7 +297,7 @@ class FilterCommand:
         filter_show_cmd.set_defaults(func=lambda: FilterCommand.get(ctx))
 
     @staticmethod
-    def get(ctx):
+    def get(ctx: Context):
         output_path = ctx.ns.output
         cat_id = ctx.ns.category
 
@@ -182,140 +310,13 @@ class FilterCommand:
             else:
                 output = open(output_path, 'wt')
 
-            cat_ids = [cat_id] if cat_id != 'ALL' else [c.category_id for c in ctx.criteria_dao.all()]
+            cat_ids = [cat_id] if cat_id != 'ALL' else [c.category_id for c in ctx.criteria_dao().all()]
 
             result = {cat_id: ctx.allegro().get_filters(cat_id) for cat_id in cat_ids}
             json.dump(result, output, default=to_dict, indent=2)
         finally:
             if output and output is not sys.stdout:
                 output.close()
-
-
-class Context:
-    def __init__(self):
-        self._ns = None
-        self._data_manager = None
-        self._modify_static = False
-
-    def close(self):
-        if self._data_manager:
-            self._data_manager.close()
-
-    @property
-    def ns(self):
-        return self._ns
-
-    @ns.setter
-    def ns(self, ns):
-        self._ns = ns
-
-    @property
-    def modify_static(self):
-        return self._modify_static
-
-    @modify_static.setter
-    def modify_static(self, value: bool) -> None:
-        self._modify_static = value
-
-    @memoized
-    def auth(self):
-        ts = carscanner.allegro.InsecureTokenStore(self.ns.data / 'tokens.yaml')
-        if self.ns.environment == ENV_LOCAL:
-            cs = carscanner.allegro.YamlClientCodeStore(carscanner.allegro.codes_path)
-            allow_fetch = not self.ns.no_fetch
-        elif self.ns.environment == ENV_TRAVIS:
-            cs = carscanner.allegro.EnvironClientCodeStore()
-            allow_fetch = False
-        else:
-            raise ValueError(self.ns.environment)
-        return carscanner.allegro.CarScannerCodeAuth(cs, ts, allow_fetch)
-
-    @memoized
-    def allegro(self):
-        return carscanner.allegro.CarscannerAllegro(self.allegro_client())
-
-    @memoized
-    def datetime_now(self) -> datetime.datetime:
-        return unix_to_datetime(self.timestamp())
-
-    @memoized
-    def offers_cmd(self):
-        return OffersCommand(self.offers_svc(), self.metadata_dao(), self.filter_svc(), self.offer_export_svc(),
-                             self.datetime_now(), self.ns.data)
-
-    @memoized
-    def metadata_dao(self):
-        return carscanner.dao.MetadataDao(self.data_manager().cars_data())
-
-    @memoized
-    def offers_svc(self):
-        return carscanner.service.OfferService(
-            self.allegro(),
-            self.criteria_dao(),
-            self.car_offers_builder(),
-            self.car_offer_dao(),
-            self.filter_svc(),
-            self.datetime_now()
-        )
-
-    @memoized
-    def filter_svc(self):
-        return carscanner.service.FilterService(
-            self.allegro(),
-            self.filter_dao(),
-            self.criteria_dao())
-
-    @memoized
-    def filter_dao(self):
-        return carscanner.dao.FilterDao(self.data_manager().mem_db())
-
-    @memoized
-    def car_offers_builder(self):
-        return carscanner.service.CarOffersBuilder(self.voivodeship_dao(), self.car_makemodel_dao(), self.datetime_now())
-
-    @memoized
-    def voivodeship_dao(self):
-        return carscanner.dao.VoivodeshipDao(self.data_manager().static_data())
-
-    @memoized
-    def car_offer_dao(self):
-        return carscanner.dao.CarOfferDao(self.data_manager().cars_data())
-
-    @memoized
-    def criteria_dao(self):
-        return carscanner.dao.CriteriaDao(self.data_manager().static_data())
-
-    @memoized
-    def categories_svc(self):
-        return carscanner.service.GetCategories(self.allegro(), self.criteria_dao())
-
-    @memoized
-    def car_makemodel_svc(self):
-        return carscanner.service.CarMakeModelService(self.car_makemodel_dao())
-
-    @memoized
-    def car_makemodel_dao(self):
-        return carscanner.dao.CarMakeModelDao(self.data_manager().static_data())
-
-    def data_manager(self):
-        if not self._data_manager:
-            self._data_manager = carscanner.data.DataManager(self.ns.data, self.modify_static)
-        return self._data_manager
-
-    @memoized
-    def timestamp(self):
-        return carscanner.utils.now()
-
-    @memoized
-    def voivodeship_svc(self):
-        return carscanner.service.VoivodeshipService(self.allegro(), self.voivodeship_dao())
-
-    @memoized
-    def allegro_client(self):
-        return allegro_pl.Allegro(self.auth())
-
-    def offer_export_svc(self):
-        return carscanner.service.ExportService(self.car_offer_dao(), self.metadata_dao())
 
 
 def main():

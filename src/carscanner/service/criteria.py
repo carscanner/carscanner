@@ -1,3 +1,5 @@
+import typing
+
 from carscanner.allegro import CarscannerAllegro
 from carscanner.dao.criteria import CriteriaDao, Criteria
 
@@ -7,7 +9,8 @@ class GetCategories:
         self._dao = dao
         self._allegro = allegro
 
-    def keep_digging(self, name: str, stack: list):
+    @staticmethod
+    def keep_digging(name: str, stack: list):
         parent = stack[-1]
         if name == 'Motoryzacja' and parent != 'Ogłoszenia i usługi':
             return False
@@ -15,10 +18,11 @@ class GetCategories:
             return name in ['Allegro', 'Ogłoszenia i usługi', 'Motoryzacja', 'Samochody', 'Dostawcze (do 3.5 t)',
                             'Osobowe']
 
-    def select_as_criteria(self, name: str, stack: list):
+    @staticmethod
+    def select_as_criteria(name: str):
         return name in ['Dostawcze (do 3.5 t)', 'Osobowe']
 
-    def traverse_cats(self, result: list, cat=None, indent_level=0, stack=None):
+    def traverse_cats(self, result: typing.List[dict], cat=None, stack=None):
         if stack is None:
             stack = []
 
@@ -32,7 +36,7 @@ class GetCategories:
             cat_name = cat.name
             cat_id = cat.id
 
-        if self.select_as_criteria(cat_name, stack):
+        if self.select_as_criteria(cat_name):
             this = {'category_id': cat_id, 'cat_name': cat_name}
             result.append(this)
 
@@ -40,7 +44,7 @@ class GetCategories:
 
         for sub_cat in cats.categories:
             if self.keep_digging(sub_cat.name, stack + [cat_name]):
-                self.traverse_cats(result, sub_cat, indent_level + 1, stack + [cat_name])
+                self.traverse_cats(result, sub_cat, stack + [cat_name])
 
     def get_categories(self):
         result = []
