@@ -20,7 +20,6 @@ class OfferService:
         'Oferta dotyczy': 'sprzedaż',
         'Stan': "używane",
         'wystawione w ciągu': "2 dni",
-        "Uszkodzony": "Nie"
     }
     search_params = {
         'fallback': False,
