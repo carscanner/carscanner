@@ -3,11 +3,12 @@ import logging
 import typing
 
 import allegro_api.models
+import isodate
 import zeep
 import zeep.exceptions
 
 from carscanner.allegro import CarscannerAllegro
-from carscanner.dao import CarOfferDao, Criteria
+from carscanner.dao import CarOfferDao, Criteria, MetadataDao, FilterDao
 from carscanner.utils import chunks
 from .car_offer import CarOffersBuilder
 from .filter import FilterService
@@ -19,8 +20,6 @@ class OfferService:
     _filter_template = {
         'Oferta dotyczy': 'sprzedaż',
         'Stan': "używane",
-        'wystawione w ciągu': "2 dni",
-        "Uszkodzony": "Nie"
     }
     search_params = {
         'fallback': False,
@@ -29,7 +28,7 @@ class OfferService:
     }
 
     def __init__(self, allegro: CarscannerAllegro, criteria_dao, car_offers_builder: CarOffersBuilder, car_offer_dao,
-                 filter_service, ts):
+                 filter_service, meta_dao: MetadataDao, ts):
         self._allegro = allegro
 
         self.criteria_dao = criteria_dao
@@ -37,6 +36,8 @@ class OfferService:
         self.car_offer_dao: CarOfferDao = car_offer_dao
         self.filter_service: FilterService = filter_service
         self.timestamp: datetime.datetime = ts
+
+        self._last_run: datetime.datetime = meta_dao.get_timestamp()
 
     def _get_offers_for_criteria(self, crit: Criteria) -> typing.Iterable[typing.List[allegro_api.models.ListingOffer]]:
         offset = 0
@@ -59,6 +60,7 @@ class OfferService:
         result['category.id'] = crit.category_id
         result['offset'] = str(offset)
         result['limit'] = str(self._allegro.get_listing.limit_max)
+        result['startingTime'] = self._get_start_period_str(crit.category_id)
 
         return result
 
@@ -101,3 +103,10 @@ class OfferService:
                     except zeep.exceptions.TransportError as x2:
                         logger.warning('Could not fetch item (%s) info: %s', item_id, x2)
             chunk_no += 1
+
+    def _get_start_period_str(self,cat_id:str) -> str:
+        delta: datetime.timedelta =  self.timestamp - self._last_run
+
+        offers_since_delta = self.filter_service.find_min_timedelta_gt(cat_id, delta)
+
+        return isodate.duration_isoformat(offers_since_delta)
