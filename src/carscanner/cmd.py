@@ -81,6 +81,7 @@ class Context:
             self.car_offers_builder(),
             self.car_offer_dao(),
             self.filter_svc(),
+            self.metadata_dao(),
             self.datetime_now()
         )
 
