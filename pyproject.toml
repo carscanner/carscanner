@@ -11,7 +11,6 @@ mattes-allegro-pl = "^0.7.0"
 python = "^3.7"
 PyYAML = "^5.1"
 tinydb = "^3.13"
-ujson = "^1.35"
 unidecode = "^1.0"
 isodate = "^0.6.0"
 
