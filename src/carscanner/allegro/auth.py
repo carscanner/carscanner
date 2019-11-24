@@ -9,7 +9,7 @@ import oauthlib.oauth2
 import requests_oauthlib
 import yaml
 
-URL_CALLBACK = 'http://127.0.0.1:8080/callback'
+URL_CALLBACK = 'http://localhost:8080/callback'
 
 logger = logging.getLogger(__name__)
 
