@@ -11,6 +11,7 @@ import carscanner.allegro
 import carscanner.dao
 import carscanner.data
 import carscanner.service
+import carscanner.service.migration
 from carscanner.utils import memoized, unix_to_datetime
 
 ENV_TRAVIS = 'travis'
@@ -142,8 +143,17 @@ class Context:
     def allegro_client(self):
         return allegro_pl.Allegro(self.auth())
 
+    @memoized
     def offer_export_svc(self):
         return carscanner.service.ExportService(self.car_offer_dao(), self.metadata_dao())
+
+    @memoized
+    def migration_v2(self):
+        return carscanner.service.migration.MigrationV2(self.data_manager().cars_data(), self.metadata_dao())
+
+    @memoized
+    def migration_service(self):
+        return carscanner.service.migration.MigrationService(self.data_manager(), self.migration_v2())
 
 
 class CommandLine:
@@ -171,6 +181,9 @@ class CommandLine:
         ns = self._parser.parse_args()
         ns.data = ns.data.expanduser()
         self._context.ns = ns
+
+        self._context.migration_service().check_migrate()
+        self._context.metadata_dao().post_init()
 
         try:
             ns.func()

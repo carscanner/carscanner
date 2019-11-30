@@ -1,6 +1,8 @@
+import dataclasses
 import datetime
 import logging
 import platform
+import typing
 
 from tinydb import TinyDB, Query
 from tinydb.database import Table
@@ -10,53 +12,54 @@ K_TS = 'timestamp'
 log = logging.getLogger(__name__)
 
 
+@dataclasses.dataclass
+class Metadata:
+    host: str
+    timestamp: str
+    version: int
+
+    @staticmethod
+    def from_dict(d: dict) -> 'Metadata':
+        return Metadata(**d)
+
+    def to_dict(self) -> dict:
+        return self.__dict__.copy()
+
+
 class MetadataDao:
-    _meta_version = 2
+    META_VER: int = 2
+    """Metadata file version expected by the software"""
 
     def __init__(self, db: TinyDB):
         self._db = db
         self._tbl: Table = db.table('meta')
+        self._meta: typing.Optional[Metadata] = None
 
-        self._meta = self._tbl.get(Query())
-        if self._meta:
-            assert self._meta['version'] == MetadataDao._meta_version
+    def post_init(self):
+        raw_meta = self._tbl.get(Query())
+        self._meta = Metadata.from_dict(raw_meta) if raw_meta else MetadataDao._init_metadata()
+        assert self._meta.version == MetadataDao.META_VER
 
     def update(self, ts: datetime.datetime):
-        self._meta[K_TS] = ts.isoformat()
-        self._meta['host'] = platform.node()
+        self._meta.timestamp = ts.isoformat()
+        self._meta.host = platform.node()
         self._tbl.upsert(self._meta, Query())
 
     def report(self):
         if self._meta:
-            log.info('Last run at %s on %s', self._meta[K_TS], self._meta['host'])
+            log.info('Last run at %s on %s', self._meta.timestamp, self._meta.host)
         else:
             log.info('First run')
 
-    def migrate(self):
-        q = Query()
-        old_tbl: Table = db.table(db.DEFAULT_TABLE)
-        old_meta = old_tbl.get(q)
-        new_meta = self._tbl.get(q)
-        if new_meta:
-            raise Exception('Already migrated')
-        if not old_meta:
-            raise Exception('No metadata to migrate')
-
-        old_meta['version'] = MetadataDao._meta_version
-
-        self._tbl.insert(old_meta)
-        old_tbl.purge()
-        self._meta = old_meta
-
     def get_timestamp(self) -> datetime.datetime:
-        return datetime.datetime.fromisoformat(self._meta[K_TS]).astimezone(datetime.timezone.utc)
+        return datetime.datetime.fromisoformat(self._meta.timestamp).astimezone(datetime.timezone.utc)
 
+    def _set_meta(self, _meta: Metadata) -> None:
+        log.warning("External update of metadata")
+        self._meta = _meta
 
-if __name__ == '__main__':
-    from sys import argv
+    meta = property(fset=_set_meta)
 
-    path = argv[1]
-    with TinyDB(path, indent=2) as db:
-        meta = MetadataDao(db)
-        meta.migrate()
-        meta.report()
+    @staticmethod
+    def _init_metadata() -> Metadata:
+        return Metadata(platform.node(), None, MetadataDao.META_VER)
