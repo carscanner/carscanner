@@ -153,7 +153,7 @@ class Context:
 
     @memoized
     def migration_service(self):
-        return carscanner.service.migration.MigrationService(self.data_manager(), self.migration_v2())
+        return carscanner.service.migration.MigrationService(self.data_manager().cars_data(), self.migration_v2())
 
 
 class CommandLine:
