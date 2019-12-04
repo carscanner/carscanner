@@ -1,26 +1,24 @@
 from unittest import TestCase
-from unittest.mock import Mock
 
-from carscanner.dao.meta import Metadata
-from carscanner.service.migration import MigrationV2
-from tinydb import TinyDB
+from tinydb import TinyDB, Query
 from tinydb.database import Table
 from tinydb.storages import MemoryStorage
 
+from carscanner.dao.meta import META_V2
+from carscanner.service.migration import MigrationV2
+
 
 class TestMigrationV2(TestCase):
-    def test_migrate_zero(self):
-        svc = MigrationV2(TinyDB(storage=MemoryStorage), Mock())
-
-        self.assertRaises(Exception, svc.migrate)
-
     def test_migrate_from_v1(self):
-        meta_db = TinyDB(storage=MemoryStorage)
-        old_tbl: Table = meta_db.table()
-        old_tbl.insert({'host': 'host', 'timestamp': 'date and time'})
-        metadata_dao = Mock()
-        svc = MigrationV2(meta_db, metadata_dao)
+        with TinyDB(storage=MemoryStorage) as meta_db:
+            old_tbl: Table = meta_db.table()
+            old_tbl.insert({'host': 'host', 'timestamp': 'date and time'})
+            svc = MigrationV2(meta_db)
 
-        svc.migrate()
+            svc.migrate()
 
-        assert metadata_dao.meta == Metadata('host', 'date and time', 2)
+            self.assertEqual(0, len(old_tbl))
+            new_tbl: Table = meta_db.table(META_V2)
+            new_meta = new_tbl.get(Query())
+
+            self.assertEqual({'host': 'host', 'timestamp': 'date and time', 'version': 2}, new_meta)

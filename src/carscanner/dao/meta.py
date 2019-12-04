@@ -8,11 +8,12 @@ from tinydb import TinyDB, Query
 from tinydb.database import Table
 
 K_TS = 'timestamp'
+META_V2 = 'meta'
 
 log = logging.getLogger(__name__)
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class Metadata:
     host: str
     timestamp: str
@@ -27,12 +28,12 @@ class Metadata:
 
 
 class MetadataDao:
-    META_VER: int = 2
+    META_VER: int = 3
     """Metadata file version expected by the software"""
 
     def __init__(self, db: TinyDB):
         self._db = db
-        self._tbl: Table = db.table('meta')
+        self._tbl: Table = db.table(META_V2)
         self._meta: typing.Optional[Metadata] = None
 
     def post_init(self):
@@ -53,12 +54,6 @@ class MetadataDao:
 
     def get_timestamp(self) -> datetime.datetime:
         return datetime.datetime.fromisoformat(self._meta.timestamp).astimezone(datetime.timezone.utc)
-
-    def _set_meta(self, _meta: Metadata) -> None:
-        log.warning("External update of metadata")
-        self._meta = _meta
-
-    meta = property(fset=_set_meta)
 
     @staticmethod
     def _init_metadata() -> Metadata:
