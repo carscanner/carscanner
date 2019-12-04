@@ -23,7 +23,7 @@ class VehicleShardLoader:
             log.debug("load %s", path)
             with tinydb.TinyDB(path, storage=ReadOnlyMiddleware(tinydb.storages.JSONStorage)) as db:
                 tbl: tinydb.database.Table = db.table(_VEHICLE_V3)
-                self._vehicle_tbl.insert_multiple(tbl.all())
+                self._vehicle_tbl.insert_multiple(sorted(tbl.all(), key=lambda doc: doc['id']))
 
         utils.walk_path(self._data_root, load_file)
 
