@@ -24,10 +24,10 @@ class TestMigrationV3(TestCase):
                 ts = 0
                 ts2 = 86400
                 old_tbl.insert_multiple([
-                    {'data': 1, 'first_spotted': ts},
-                    {'data': 2, 'first_spotted': ts},
-                    {'data': 3, 'first_spotted': ts2},
-                    {'data': 4, 'first_spotted': ts2}
+                    {'id': 1, 'first_spotted': ts},
+                    {'id': 2, 'first_spotted': ts},
+                    {'id': 3, 'first_spotted': ts2},
+                    {'id': 4, 'first_spotted': ts2}
                 ])
 
                 with TinyDB(storage=MemoryStorage) as new_db:
@@ -38,10 +38,10 @@ class TestMigrationV3(TestCase):
                 new_tbl = new_db.table(VEHICLE_V3)
                 self.assertEqual(4, len(new_tbl))
                 docs = new_tbl.all()
-                self.assertIn({'data': 1, 'first_spotted': ts}, docs)
-                self.assertIn({'data': 2, 'first_spotted': ts}, docs)
-                self.assertIn({'data': 3, 'first_spotted': ts2}, docs)
-                self.assertIn({'data': 4, 'first_spotted': ts2}, docs)
+                self.assertIn({'id': 1, 'first_spotted': ts}, docs)
+                self.assertIn({'id': 2, 'first_spotted': ts}, docs)
+                self.assertIn({'id': 3, 'first_spotted': ts2}, docs)
+                self.assertIn({'id': 4, 'first_spotted': ts2}, docs)
 
                 meta = Metadata(**meta_tbl.get(Query()))
 

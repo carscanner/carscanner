@@ -21,7 +21,7 @@ class MigrationV3:
 
         vehicle_tbl_v2: Table = self._vehicle_db_v1.table(_VEHICLE_V1)
         vehicle_tbl_v3: Table = self._vehicle_db_v3.table(_VEHICLE_V3)
-        vehicle_tbl_v3.insert_multiple(vehicle_tbl_v2.all())
+        vehicle_tbl_v3.insert_multiple(sorted(vehicle_tbl_v2.all(), key=lambda doc: doc['id']))
         self._vehicle_db_v1.purge_table(_VEHICLE_V1)
 
         meta_tbl.update({'version': 3}, Query())

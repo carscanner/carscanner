@@ -42,9 +42,8 @@ class MetadataDao:
         assert self._meta.version == MetadataDao.META_VER
 
     def update(self, ts: datetime.datetime):
-        self._meta.timestamp = ts.isoformat()
-        self._meta.host = platform.node()
-        self._tbl.upsert(self._meta, Query())
+        self._meta = Metadata(platform.node(), ts.isoformat(), MetadataDao.META_VER)
+        self._tbl.upsert(self._meta.to_dict(), Query())
 
     def report(self):
         if self._meta:
