@@ -1,29 +1,26 @@
-from carscanner.dao import MetadataDao
-from carscanner.dao.meta import Metadata
 from tinydb import TinyDB, Query
 from tinydb.database import Table
 
+from carscanner.dao.meta import META_V2 as _META_V2
+
 
 class MigrationV2:
-    _VERSION = 2
-
-    def __init__(self, meta_db: TinyDB, meta_dao: MetadataDao):
-        self._metaDao = meta_dao
+    def __init__(self, meta_db: TinyDB):
         self._db = meta_db
 
     def migrate(self):
-        new_tbl: Table = self._db.table('meta')
+        meta_tbl_v2: Table = self._db.table(_META_V2)
         q = Query()
-        old_tbl: Table = self._db.table()
-        old_meta = old_tbl.get(q)
-        new_meta = new_tbl.get(q)
-        if new_meta:
+        meta_tbl_v1: Table = self._db.table()
+        meta_v1 = meta_tbl_v1.get(q)
+        meta_v2 = meta_tbl_v2.get(q)
+        if meta_v2:
             raise Exception('Already migrated')
-        if not old_meta:
+        if not meta_v1:
             raise Exception('No metadata to migrate')
 
-        new_meta = Metadata(old_meta['host'], old_meta['timestamp'], MigrationV2._VERSION)
+        meta_v2 = meta_v1.copy()
+        meta_v2['version'] = _VERSION = 2
 
-        new_tbl.insert(new_meta.to_dict())
-        old_tbl.purge()
-        self._metaDao.meta = new_meta
+        meta_tbl_v2.insert(meta_v2)
+        self._db.purge_table(self._db.DEFAULT_TABLE)

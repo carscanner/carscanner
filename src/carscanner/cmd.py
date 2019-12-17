@@ -5,6 +5,7 @@ import pathlib
 import sys
 
 import allegro_pl
+import tinydb
 
 import carscanner
 import carscanner.allegro
@@ -12,7 +13,6 @@ import carscanner.dao
 import carscanner.data
 import carscanner.service
 import carscanner.service.migration
-import tinydb
 from carscanner.utils import memoized, unix_to_datetime
 
 ENV_TRAVIS = 'travis'
@@ -22,12 +22,11 @@ ENV_LOCAL = 'local'
 class Context:
     def __init__(self):
         self._ns = None
-        self._data_manager = None
         self._modify_static = False
         self._closeables = []
 
     def close(self):
-        for o in self._closeables:
+        for o in reversed(self._closeables):
             o.close()
 
     @property
@@ -73,27 +72,10 @@ class Context:
                              self.datetime_now(), self.ns.data)
 
     @memoized
-    def static_data(self) -> tinydb.TinyDB:
-        storage = tinydb.TinyDB.DEFAULT_STORAGE if self.modify_static else carscanner.data.ReadOnlyMiddleware
-        db = tinydb.TinyDB(storage=storage, path=(self.ns.data / 'static.json'), indent=2)
-        self._closeables.append(db)
-        return db
-
-    @memoized
-    def cars_data(self) -> tinydb.TinyDB:
-        db = tinydb.TinyDB(self.ns.data / 'cars.json', indent=2)
-        self._closeables.append(db)
-        return db
-
-    @memoized
     def mem_db(self):
         db = tinydb.TinyDB(storage=tinydb.storages.MemoryStorage)
         self._closeables.append(db)
         return db
-
-    @memoized
-    def metadata_dao(self):
-        return carscanner.dao.MetadataDao(self.cars_data())
 
     @memoized
     def offers_svc(self):
@@ -128,10 +110,6 @@ class Context:
         return carscanner.dao.VoivodeshipDao(self.static_data())
 
     @memoized
-    def car_offer_dao(self):
-        return carscanner.dao.CarOfferDao(self.cars_data())
-
-    @memoized
     def criteria_dao(self):
         return carscanner.dao.CriteriaDao(self.static_data())
 
@@ -163,13 +141,65 @@ class Context:
     def offer_export_svc(self):
         return carscanner.service.ExportService(self.car_offer_dao(), self.metadata_dao())
 
+    # ##### all changed methods from Context go here, ordered by name
+
     @memoized
-    def migration_v2(self):
-        return carscanner.service.migration.MigrationV2(self.cars_data(), self.metadata_dao())
+    def car_offer_dao(self):
+        return carscanner.dao.CarOfferDao(self.cars_db_v2())
+
+    @memoized
+    def cars_db_v1(self):
+        db = tinydb.TinyDB(self.ns.data / 'cars.json', indent=2)
+        self._closeables.append(db)
+        return db
+
+    @memoized
+    def cars_db_v2(self) -> tinydb.TinyDB:
+        db = tinydb.TinyDB(storage=tinydb.storages.MemoryStorage)
+
+        from carscanner.dao.car_offer import VEHICLE_V3
+
+        loader = carscanner.data.VehicleShardLoader(db.table(VEHICLE_V3), self.vehicle_data_path())
+        loader.load()
+
+        self._closeables.append(db)
+        self._closeables.append(loader)
+
+        return db
+
+    @memoized
+    def metadata_dao(self):
+        return carscanner.dao.MetadataDao(self.cars_db_v1())
 
     @memoized
     def migration_service(self):
-        return carscanner.service.migration.MigrationService(self.cars_data(), self.migration_v2())
+        return carscanner.service.migration.MigrationService(self.cars_db_v1(), self.cars_db_v2(), self.migration_v2(),
+                                                             self.migration_v3())
+
+    @memoized
+    def migration_v2(self):
+        return carscanner.service.migration.MigrationV2(self.cars_db_v1())
+
+    @memoized
+    def migration_v3(self):
+        return carscanner.service.migration.MigrationV3(self.cars_db_v1(), self.cars_db_v2(), self.ns.data)
+
+    @memoized
+    def static_data(self) -> tinydb.TinyDB:
+        storage = tinydb.TinyDB.DEFAULT_STORAGE if self.modify_static else carscanner.data.ReadOnlyMiddleware()
+        db = tinydb.TinyDB(storage=storage, path=self.ns.data / 'static.json', indent=2)
+        self._closeables.append(db)
+        return db
+
+    @memoized
+    def vehicle_data_path(self) -> pathlib.Path:
+        from carscanner.dao.car_offer import VEHICLE_V3
+
+        root_path: pathlib.Path = self.ns.data
+
+        data_path = root_path / VEHICLE_V3
+        data_path.mkdir(parents=True, exist_ok=True)
+        return data_path
 
 
 class CommandLine:

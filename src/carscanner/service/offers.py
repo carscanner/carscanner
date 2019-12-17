@@ -60,6 +60,8 @@ class OfferService:
         result['category.id'] = crit.category_id
         result['offset'] = str(offset)
         result['limit'] = str(self._allegro.get_listing.limit_max)
+
+        # TODO to powoduje, że nie wiem kiedy oferty są zamykane, sprzedawane. nie jestem w stanie wyswietlić aktualnych ofert, bo programowi wydaje się że aktualne są tylko oferty z ostatnich dwóch dni
         result['startingTime'] = self._get_start_period_str(crit.category_id)
 
         return result
@@ -104,8 +106,8 @@ class OfferService:
                         logger.warning('Could not fetch item (%s) info: %s', item_id, x2)
             chunk_no += 1
 
-    def _get_start_period_str(self,cat_id:str) -> str:
-        delta: datetime.timedelta =  self.timestamp - self._last_run
+    def _get_start_period_str(self, cat_id: str) -> str:
+        delta: datetime.timedelta = self.timestamp - self._last_run
 
         offers_since_delta = self.filter_service.find_min_timedelta_gt(cat_id, delta)
 
