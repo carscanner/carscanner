@@ -1,7 +1,9 @@
 import datetime
 import functools
 import logging
+import pathlib
 import time
+import typing
 
 
 def datetime_to_unix(dt: datetime.datetime) -> int:
@@ -49,3 +51,15 @@ def now():
 
 def join_str(separator: str, *args) -> str:
     return separator.join(arg for arg in args if arg is not None)
+
+
+def _ignore_file_handler(_: pathlib.Path) -> None:
+    pass
+
+
+def walk_path(path: pathlib.Path, file_handler: typing.Callable[[pathlib.Path], None] = _ignore_file_handler) -> None:
+    for i in sorted(path.iterdir()):
+        if i.is_dir():
+            walk_path(i, file_handler)
+        else:
+            file_handler(i)

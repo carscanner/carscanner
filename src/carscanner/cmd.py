@@ -159,8 +159,7 @@ class Context:
 
         from carscanner.dao.car_offer import VEHICLE_V3
 
-        loader = carscanner.data.VehicleShardLoader(db.table(VEHICLE_V3), self.vehicle_shard_dao(),
-                                                    self.vehicle_data_path())
+        loader = carscanner.data.VehicleShardLoader(db.table(VEHICLE_V3), self.vehicle_data_path())
         loader.load()
 
         self._closeables.append(db)
@@ -188,8 +187,7 @@ class Context:
     @memoized
     def static_data(self) -> tinydb.TinyDB:
         storage = tinydb.TinyDB.DEFAULT_STORAGE if self.modify_static else carscanner.data.ReadOnlyMiddleware()
-        extra_args = {'path': self.ns.data / 'static.json', 'indent': 2} if self.modify_static else {}
-        db = tinydb.TinyDB(storage=storage, **extra_args)
+        db = tinydb.TinyDB(storage=storage, path=self.ns.data / 'static.json', indent=2)
         self._closeables.append(db)
         return db
 
@@ -202,10 +200,6 @@ class Context:
         data_path = root_path / VEHICLE_V3
         data_path.mkdir(parents=True, exist_ok=True)
         return data_path
-
-    @memoized
-    def vehicle_shard_dao(self):
-        return carscanner.dao.VehicleShardDao(self.cars_db_v1().table('active_vehicle_file'))
 
 
 class CommandLine:
