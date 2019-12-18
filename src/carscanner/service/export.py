@@ -5,10 +5,7 @@ import typing
 from carscanner.dao import CarOffer, CarOfferDao, MetadataDao
 from carscanner.utils import datetime_to_unix, join_str
 
-try:
-    import ujson as json
-except ModuleNotFoundError:
-    import json
+import json
 
 
 class ExportService:

@@ -11,6 +11,9 @@ _K_PRICE = 'price'
 _K_FIRST_SPOTTED = 'first_spotted'
 _K_LAST_SPOTTED = 'last_spotted'
 
+VEHICLE_V1 = 'car_offer'
+VEHICLE_V3 = 'vehicle'
+
 
 @dataclasses.dataclass
 class CarOffer:
@@ -53,7 +56,7 @@ class CarOffer:
 
 class CarOfferDao:
     def __init__(self, db: tinydb.TinyDB):
-        self._tbl: tinydb.database.Table = db.table('car_offer')
+        self._tbl: tinydb.database.Table = db.table(VEHICLE_V3)
 
     def insert_multiple(self, car_offers: typing.Iterable[CarOffer]) -> typing.List[int]:
         return self._tbl.insert_multiple(o.to_dict() for o in car_offers)
