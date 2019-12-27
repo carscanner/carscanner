@@ -13,6 +13,7 @@ PyYAML = "^5.1"
 tinydb = "^3.13"
 unidecode = "^1.0"
 isodate = "^0.6.0"
+boto3 = "^1.10.45"
 
 [tool.poetry.dev-dependencies]
 codecov = "^2.0"
