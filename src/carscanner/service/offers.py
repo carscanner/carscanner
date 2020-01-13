@@ -61,9 +61,6 @@ class OfferService:
         result['offset'] = str(offset)
         result['limit'] = str(self._allegro.get_listing.limit_max)
 
-        # TODO to powoduje, że nie wiem kiedy oferty są zamykane, sprzedawane. nie jestem w stanie wyswietlić aktualnych ofert, bo programowi wydaje się że aktualne są tylko oferty z ostatnich dwóch dni
-        result['startingTime'] = self._get_start_period_str(crit.category_id)
-
         return result
 
     def get_offers(self):

@@ -168,6 +168,12 @@ class Context:
         return db
 
     @memoized
+    def migrate_aws(self):
+        from carscanner.service.migration_aws.dynamodb import MigrateAWS
+        from carscanner.dao.car_offer import VEHICLE_V3
+        return MigrateAWS(self.cars_db_v2().table(VEHICLE_V3))
+
+    @memoized
     def metadata_dao(self):
         return carscanner.dao.MetadataDao(self.cars_db_v1())
 
@@ -218,7 +224,15 @@ class CommandLine:
         parser.add_argument('--version', '-v', action='version', version=carscanner.__version__)
         subparsers = parser.add_subparsers()
 
-        for c in [TokenCommand, CarListCommand, CriteriaCommand, OffersCommand, VoivodeshipCommand, FilterCommand]:
+        for c in [
+            CarListCommand,
+            CriteriaCommand,
+            FilterCommand,
+            MigrateCommand,
+            OffersCommand,
+            TokenCommand,
+            VoivodeshipCommand,
+        ]:
             c.build_argparse(subparsers, self._context, parser.print_help)
 
         return parser
@@ -294,6 +308,20 @@ class CriteriaCommand:
 
         criteria_build_opt = criteria_subparsers.add_parser('build', help='Build criteria database')
         criteria_build_opt.set_defaults(func=build)
+
+
+class MigrateCommand:
+    @staticmethod
+    def build_argparse(subparsers, ctx, _):
+        migrate_parser: argparse.ArgumentParser = subparsers.add_parser('migrate', help='Migrate data to AWS DynamoDB')
+        migrate_parser.set_defaults(func=migrate_parser.print_help)
+        migrate_subparsers = migrate_parser.add_subparsers()
+
+        run_parser = migrate_subparsers.add_parser('run')
+        run_parser.add_argument('--profile', '-p', help='aws configuration profile', metavar='profile')
+        run_parser.add_argument('--endpoint', '-e', help='Connection URL', metavar='endpoint')
+
+        run_parser.set_defaults(func=lambda: ctx.migrate_aws().run(ctx.ns.profile, ctx.ns.endpoint))
 
 
 class OffersCommand:
