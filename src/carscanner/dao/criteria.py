@@ -9,6 +9,7 @@ KEY_CATEGORY_ID = 'category_id'
 @dataclass
 class Criteria:
     category_id: str
+    category_name: str
 
 
 class CriteriaDao:
@@ -19,7 +20,7 @@ class CriteriaDao:
         return self._tbl.insert_multiple([crit.__dict__ for crit in criteria])
 
     def all(self) -> typing.List[Criteria]:
-        return [Criteria(i[KEY_CATEGORY_ID]) for i in self._tbl.all()]
+        return [Criteria(i[KEY_CATEGORY_ID], i['category_name']) for i in self._tbl.all()]
 
     def purge(self):
         self._tbl.purge()

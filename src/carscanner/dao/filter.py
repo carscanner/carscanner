@@ -16,7 +16,7 @@ class FilterDao:
 
     def get(self, cat_id, name) -> dict:
         params = Query()
-        return self._tbl.get((params.category_id == cat_id) & (params.name == name))
+        return self._tbl.get(params.name == name)
 
     def get_required(self, cat_id, name) -> dict:
         result = self.get(cat_id, name)
