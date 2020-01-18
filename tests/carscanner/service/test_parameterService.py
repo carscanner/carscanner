@@ -10,7 +10,6 @@ class TestFilterService(TestCase):
         param = allegro_api.models.ListingResponseFilters(id='startingTime', name='wystawione w ciągu')
         actual = FilterService._filter_to_dict('a category', param)
         expected = {
-            'category_id': 'a category',
             "id": "startingTime",
             "name": "wystawione w ciągu",
             'max_value': None,
