@@ -3,6 +3,12 @@ import typing
 from carscanner.allegro import CarscannerAllegro
 from carscanner.dao.criteria import CriteriaDao, Criteria
 
+allowed_cat_stacks = [
+    ['Allegro', 'Ogłoszenia i usługi', 'Motoryzacja', 'Samochody', 'Osobowe'],
+]
+
+skip = ['Pozostałe']
+
 
 class GetCategories:
     def __init__(self, allegro: CarscannerAllegro, dao: CriteriaDao):
@@ -10,19 +16,18 @@ class GetCategories:
         self._allegro = allegro
 
     @staticmethod
-    def keep_digging(name: str, stack: list):
-        parent = stack[-1]
-        if name == 'Motoryzacja' and parent != 'Ogłoszenia i usługi':
-            return False
+    def keep_digging(stack: list):
+        for allowed_stack in allowed_cat_stacks:
+            if len(stack) <= len(allowed_stack) and stack == allowed_stack[:len(stack)]:
+                return True
         else:
-            return name in ['Allegro', 'Ogłoszenia i usługi', 'Motoryzacja', 'Samochody', 'Dostawcze (do 3.5 t)',
-                            'Osobowe']
+            return False
 
     @staticmethod
-    def select_as_criteria(name: str):
-        return name in ['Dostawcze (do 3.5 t)', 'Osobowe']
+    def select_as_criteria(name: str, stack: list):
+        return stack in allowed_cat_stacks
 
-    def traverse_cats(self, result: typing.List[dict], cat=None, stack=None):
+    def traverse_cats(self, result: typing.List[Criteria], cat=None, stack=None):
         if stack is None:
             stack = []
 
@@ -36,14 +41,16 @@ class GetCategories:
             cat_name = cat.name
             cat_id = cat.id
 
-        if self.select_as_criteria(cat_name):
-            this = {'category_id': cat_id, 'cat_name': cat_name}
+        if cat_name in skip:
+            return
+
+        if self.select_as_criteria(cat_name, stack):
+            this = Criteria(cat_id, cat_name)
             result.append(this)
 
-        cats = self._allegro.get_categories(cat_id)
-
-        for sub_cat in cats.categories:
-            if self.keep_digging(sub_cat.name, stack + [cat_name]):
+        if self.keep_digging(stack + [cat_name]):
+            cats = self._allegro.get_categories(cat_id)
+            for sub_cat in cats.categories:
                 self.traverse_cats(result, sub_cat, stack + [cat_name])
 
     def get_categories(self):
@@ -55,4 +62,4 @@ class GetCategories:
         cats = self.get_categories()
 
         self._dao.purge()
-        self._dao.insert_multiple([Criteria(cat['category_id']) for cat in cats])
+        self._dao.insert_multiple(cats)

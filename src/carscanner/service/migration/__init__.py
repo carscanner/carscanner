@@ -1,4 +1,5 @@
 import logging
+import typing
 
 import tinydb
 from tinydb import Query
@@ -14,10 +15,9 @@ log = logging.getLogger(__name__)
 
 
 class MigrationService:
-    def __init__(self, cars_db_v1: tinydb.TinyDB, cars_db_v2: tinydb.TinyDB, v2migration: MigrationV2,
-                 v3migration: MigrationV3):
+    def __init__(self, cars_db_v1: tinydb.TinyDB, v2migration: typing.Callable,
+                 v3migration: typing.Callable):
         self._cars_db_v1 = cars_db_v1
-        self._cars_db_v3 = cars_db_v2
         self._v2 = v2migration
         self._v3 = v3migration
 
@@ -36,7 +36,7 @@ class MigrationService:
 
             # default table in use - version 1
             log.info("Migrate data to version 2")
-            self._v2.migrate()
+            self._v2().migrate()
 
         if META_V2 in self._cars_db_v1.tables():
             meta_tbl: Table = self._cars_db_v1.table(META_V2)
@@ -45,4 +45,4 @@ class MigrationService:
 
             if raw_meta[_VERSION] == 2:
                 log.info("Migrate data to version 3")
-                self._v3.migrate()
+                self._v3().migrate()

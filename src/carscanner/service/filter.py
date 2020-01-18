@@ -1,12 +1,16 @@
 import bisect
 import datetime
+import logging
 import typing
 
 import allegro_api
 import isodate
 
 from carscanner.allegro import CarscannerAllegro
-from carscanner.dao import CriteriaDao, FilterDao
+from carscanner.dao import CriteriaDao, FilterDao, Criteria
+
+log = logging.getLogger(__name__)
+crit = Criteria('4029', 'Osobowe')
 
 
 class FilterService:
@@ -16,16 +20,15 @@ class FilterService:
         self._crit_dao = crit_dao
 
     def load_filters(self):
-        for crit in self._crit_dao.all():
-            filters = self._allegro.get_filters(crit.category_id)
-            for filt in filters:
-                filt = FilterService._filter_to_dict(crit.category_id, filt)
-                self._filter_dao.insert(filt)
+        log.debug("Get filters for %s", crit.category_name)
+        filters = self._allegro.get_filters(crit.category_id)
+        for filt in filters:
+            filt = FilterService._filter_to_dict(crit.category_id, filt)
+            self._filter_dao.insert(filt)
 
     @staticmethod
     def _filter_to_dict(cat_id, param: allegro_api.models.ListingResponseFilters) -> dict:
         param_dict = param.to_dict()
-        param_dict['category_id'] = cat_id
         return param_dict
 
     def transform_filters(self, category_id, filters: typing.Dict[str, str]) -> typing.Dict[str, str]:

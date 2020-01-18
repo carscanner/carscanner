@@ -179,8 +179,8 @@ class Context:
 
     @memoized
     def migration_service(self):
-        return carscanner.service.migration.MigrationService(self.cars_db_v1(), self.cars_db_v2(), self.migration_v2(),
-                                                             self.migration_v3())
+        return carscanner.service.migration.MigrationService(self.cars_db_v1(),  self.migration_v2,
+                                                             self.migration_v3)
 
     @memoized
     def migration_v2(self):

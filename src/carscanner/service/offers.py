@@ -8,7 +8,7 @@ import zeep
 import zeep.exceptions
 
 from carscanner.allegro import CarscannerAllegro
-from carscanner.dao import CarOfferDao, Criteria, MetadataDao, FilterDao
+from carscanner.dao import CarOfferDao, Criteria, MetadataDao
 from carscanner.utils import chunks
 from .car_offer import CarOffersBuilder
 from .filter import FilterService
