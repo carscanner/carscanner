@@ -1,5 +1,5 @@
 from .car_offer import CarOffersBuilder
-from .criteria import GetCategories
+from .category import GetCategories
 from .export import ExportService
 from .filter import FilterService
 from .make_model import CarMakeModelService, derive_model
