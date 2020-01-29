@@ -1,82 +1,125 @@
+import tempfile
+from datetime import datetime
+from pathlib import Path
 from unittest import TestCase
 from unittest.mock import Mock
 
-from carscanner.service.migration import MigrationService
+from bson import Decimal128
+from mongomock import MongoClient
 from tinydb import TinyDB
-from tinydb.database import Table
-from tinydb.storages import MemoryStorage
+
+from carscanner.service.migration import MigrationService
 
 
 class TestMigrationService(TestCase):
     def test_check_migrate_zero(self):
-        v2_mock = Mock()
-        v3_mock = Mock()
-        old_cars_db = TinyDB(storage=MemoryStorage)
-        svc = MigrationService(old_cars_db, v2_mock, v3_mock)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            temprootpath = Path(tmpdir)
+            svc = MigrationService(
+                temprootpath / 'cars.json',
+                temprootpath / 'vehicle', Mock(),
+                MongoClient().get_database('carscanner')
+            )
+            svc.check_migrate()
 
-        svc.check_migrate()
+    def test_check_migrate_from_previous(self):
+        ts = datetime.utcnow()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            temprootpath = Path(tmpdir)
+            path_v1 = temprootpath / 'cars.json'
+            with TinyDB(path_v1) as db_v1:
+                db_v1.table('meta').insert({
+                    'version': 3,
+                    'timestamp': ts.isoformat(),
+                    'host': 'host',
+                })
 
-    def test_check_migrate_from_v1(self):
-        v2_mock = Mock()
-        v3_mock = Mock()
-        old_cars_db = TinyDB(storage=MemoryStorage)
-        tbl: Table = old_cars_db.table()
-        tbl.insert({'timestamp': 'timestamp', 'host': 'host'})
-        svc = MigrationService(old_cars_db,  v2_mock, v3_mock)
+            path_v3 = temprootpath / 'vehicle'
+            path_v3_file = path_v3 / '2020' / '0101.json'
+            path_v3_file.parent.mkdir(parents=True)
+            with TinyDB(path_v3_file) as db_v3:
+                db_v3.table('vehicle').insert({
+                    "id": "7597123698",
+                    "make": "Audi",
+                    "model": "Q7",
+                    "year": 2010,
+                    "mileage": 89000,
+                    "image": "image-url",
+                    "url": "allegro-url",
+                    "name": "my beloved car",
+                    "price": "88500",
+                    "first_spotted": 1554749924,
+                    "last_spotted": 1554757581,
+                    "voivodeship": "kujawsko-pomorskie",
+                    "location": "Grudziądz",
+                    "imported": False,
+                })
 
-        svc.check_migrate()
+                mongo = MongoClient()
 
-        v2_mock().migrate.assert_called_once()
-        v3_mock().migrate.assert_not_called()
+                svc = MigrationService(
+                    path_v1,
+                    path_v3,
+                    lambda: db_v3.table('vehicle'),
+                    mongo.get_database('carscanner')
+                )
 
-    def test_check_migrate_from_v4_in_default(self):
-        v2_mock = Mock()
-        v3_mock = Mock()
-        cars_db_v1 = TinyDB(storage=MemoryStorage)
-        tbl: Table = cars_db_v1.table()
-        tbl.insert({'version': 4})
-        svc = MigrationService(cars_db_v1,  v2_mock, v3_mock)
+                svc.check_migrate()
 
-        self.assertRaises(AssertionError, svc.check_migrate)
+                self.assertIn('carscanner', mongo.list_database_names())
+                carscanner_db = mongo.get_database('carscanner')
+                self.assertIn('meta', carscanner_db.list_collection_names())
+                meta_col = carscanner_db.get_collection('meta')
+                self.assertIs(1, meta_col.count_documents({}))
 
-        v2_mock.migrate.assert_not_called()
-        v3_mock.migrate.assert_not_called()
+                meta_raw = meta_col.find_one({})
+                self.assertEqual({
+                    'version': 4,
+                    'timestamp': ts.replace(microsecond=int(ts.microsecond / 1000) * 1000),
+                    'host': 'host',
+                }, {k: v for k, v in meta_raw.items() if k in ['timestamp', 'version', 'host']})
 
-    def test_check_migrate_from_v2(self):
-        v2_mock = Mock()
-        v3_mock = Mock()
-        old_cars_db = TinyDB(storage=MemoryStorage)
-        tbl: Table = old_cars_db.table('meta')
-        tbl.insert({'timestamp': 'timestamp', 'host': 'host', 'version': 2})
-        svc = MigrationService(old_cars_db, v2_mock, v3_mock)
+                self.assertIn('vehicle', carscanner_db.list_collection_names())
+                vehicle_col = carscanner_db.get_collection('vehicle')
+                self.assertIs(1, vehicle_col.count_documents({}))
+                vehicle_raw = vehicle_col.find_one({})
+                self.assertEqual({
+                    'make': 'Audi',
+                    'model': 'Q7',
+                    'year': 2010,
+                    'mileage': 89000,
+                    'image': 'image-url',
+                    'url': 'allegro-url',
+                    'name': 'my beloved car',
+                    'price': Decimal128('88500'),
+                    'first_spotted': datetime(2019, 4, 8, 18, 58, 44),
+                    'last_spotted': datetime(2019, 4, 8, 21, 6, 21),
+                    'voivodeship': 'kujawsko-pomorskie',
+                    'location': 'Grudziądz',
+                    'imported': False,
+                    '_id': {
+                        'provider': 'allegro',
+                        'id': '7597123698'
+                    }
+                },
+                    vehicle_raw
+                )
 
-        svc.check_migrate()
+    def test_migrate_from_current_no_action(self):
+        ts = datetime.utcnow()
+        ts = ts.replace(microsecond=int(ts.microsecond / 1000) * 1000)
+        mongo = MongoClient()
+        mongo.carscanner.meta.insert_one({
+            'version': 4,
+            'timestamp': ts,
+            'host': 'host',
+        })
 
-        v2_mock().migrate.assert_not_called()
-        v3_mock().migrate.assert_called_once()
-
-    def test_check_migrate_from_v3(self):
-        v2_mock = Mock()
-        v3_mock = Mock()
-        old_cars_db = TinyDB(storage=MemoryStorage)
-        tbl: Table = old_cars_db.table('meta')
-        tbl.insert({'version': 3})
-        svc = MigrationService(old_cars_db, v2_mock, v3_mock)
-
-        svc.check_migrate()
-
-        v2_mock.migrate.assert_not_called()
-        v3_mock.migrate.assert_not_called()
-
-    def test_check_migrate_from_v4(self):
-        v2_mock = Mock()
-        v3_mock = Mock()
-        old_cars_db = TinyDB(storage=MemoryStorage)
-        tbl: Table = old_cars_db.table('meta')
-        tbl.insert({'version': 4})
-        svc = MigrationService(old_cars_db, v2_mock, v3_mock)
-
-        self.assertRaises(AssertionError, svc.check_migrate)
-
-        v2_mock.migrate.assert_not_called()
-        v3_mock.migrate.assert_not_called()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            temprootpath = Path(tmpdir)
+            svc = MigrationService(
+                temprootpath / 'cars.json',
+                temprootpath / 'vehicle',
+                Mock(),
+                mongo.carscanner)
+            svc.check_migrate()

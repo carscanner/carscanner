@@ -30,11 +30,12 @@ class CarscannerAllegro:
         self.get_states_info = soap.get_states_info
 
     def get_filters(self, cat_id: str) -> typing.List[allegro_api.models.ListingResponseFilters]:
-        return self.get_listing(search_params={
-            'category.id': cat_id,
-            'limit': self.get_listing.limit_min,
-            'include': ['-all', 'filters']
-        }, _request_timeout=(30, 30)).filters
+        return self.get_listing(
+            category_id=cat_id,
+            limit=self.get_listing.limit_min,
+            include=['-all', 'filters'],
+            _request_timeout=(30, 30),
+        ).filters
 
 
 def get_client(code_store, token_store: allegro_pl.TokenStore, allow_fetch=True) -> allegro_pl.Allegro:

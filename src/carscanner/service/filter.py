@@ -1,10 +1,7 @@
-import bisect
-import datetime
 import logging
 import typing
 
 import allegro_api
-import isodate
 
 from carscanner.allegro import CarscannerAllegro
 from carscanner.dao import CriteriaDao, FilterDao, Criteria
@@ -38,12 +35,3 @@ class FilterService:
             result[nk] = nv
 
         return result
-
-    def find_min_timedelta_gt(self, cat_id: str, delta: datetime.timedelta) -> typing.Optional[datetime.timedelta]:
-        doc = self._filter_dao.get_required(cat_id, 'wystawione w ciągu')
-        durations = sorted([isodate.parse_duration(duration['value']) for duration in doc['values']])
-        idx = bisect.bisect_left(durations, delta)
-        if idx == len(durations):
-            return None
-        else:
-            return durations[idx]
