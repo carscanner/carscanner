@@ -189,7 +189,7 @@ class Context:
     @memoized
     def mongodb_connection(self) -> pymongo.MongoClient:
         import os
-        return pymongo.MongoClient(os.environ.get('MONGODB_URI'), tz_aware=True)
+        return pymongo.MongoClient(os.environ.get('MONGODB_URI'), tz_aware=True, retryWrites=False)
 
     @memoized
     def offers_cmd(self):
@@ -235,7 +235,6 @@ class Context:
     def vehicle_table_v3(self) -> tinydb.database.Table:
         from carscanner.dao.car_offer import VEHICLE_V3
         return self.cars_db_v2().table(VEHICLE_V3)
-
 
 
 class CommandLine:
