@@ -37,9 +37,11 @@ class MigrationService:
 
     def check_migrate(self):
         if self.is_current_version():
+            log.info("Database in the current version")
             if self.is_previous_version():
                 raise MetadataVersionException('Found both previous and current versions of metadata')
         elif self.is_previous_version():
+            log.info("Database in the previous version")
             self.do_migrate()
 
     def is_previous_version(self) -> bool:
@@ -56,9 +58,10 @@ class MigrationService:
         # this is the first version to use MongoDB
         # there mey be either no data or it's the current version
 
-        if 'meta' not in self._db_v4.list_collection_names():
+        raw_meta = self._meta_col().find_one()
+        if raw_meta is None:
             return False
-        assert 4 == self._meta_col().find_one({})['version']
+        assert 4 == raw_meta['version']
         return True
 
     def do_migrate(self) -> None:

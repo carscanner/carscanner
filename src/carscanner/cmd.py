@@ -184,7 +184,7 @@ class Context:
     @memoized
     def mongodb_carscanner_db(self) -> pymongo.database.Database:
         conn = self.mongodb_connection()
-        return conn.get_database('carscanner', codec_options=conn.codec_options)
+        return conn.get_database(codec_options=conn.codec_options)
 
     @memoized
     def mongodb_connection(self) -> pymongo.MongoClient:
