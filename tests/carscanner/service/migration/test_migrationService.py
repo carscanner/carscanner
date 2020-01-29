@@ -91,7 +91,7 @@ class TestMigrationService(TestCase):
                     'image': 'image-url',
                     'url': 'allegro-url',
                     'name': 'my beloved car',
-                    'price': Decimal128('88500'),
+                    'price': Decimal128('88500.00'),
                     'first_spotted': datetime(2019, 4, 8, 18, 58, 44),
                     'last_spotted': datetime(2019, 4, 8, 21, 6, 21),
                     'voivodeship': 'kujawsko-pomorskie',
