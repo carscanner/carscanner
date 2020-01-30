@@ -1,10 +1,13 @@
 import argparse
 import datetime
 import json
+import logging
 import pathlib
 import sys
 
 import allegro_pl
+import pymongo
+import pymongo.database
 import tinydb
 
 import carscanner
@@ -14,6 +17,8 @@ import carscanner.data
 import carscanner.service
 import carscanner.service.migration
 from carscanner.utils import memoized, unix_to_datetime
+
+log = logging.getLogger(__name__)
 
 ENV_TRAVIS = 'travis'
 ENV_LOCAL = 'local'
@@ -46,30 +51,12 @@ class Context:
         self._modify_static = value
 
     @memoized
-    def auth(self):
-        ts = carscanner.allegro.InsecureTokenStore(self.ns.data / 'tokens.yaml')
-        if self.ns.environment == ENV_LOCAL:
-            cs = carscanner.allegro.YamlClientCodeStore(carscanner.allegro.codes_path)
-            allow_fetch = not self.ns.no_fetch
-        elif self.ns.environment == ENV_TRAVIS:
-            cs = carscanner.allegro.EnvironClientCodeStore()
-            allow_fetch = False
-        else:
-            raise ValueError(self.ns.environment)
-        return carscanner.allegro.CarScannerCodeAuth(cs, ts, allow_fetch)
-
-    @memoized
     def allegro(self):
         return carscanner.allegro.CarscannerAllegro(self.allegro_client())
 
     @memoized
     def datetime_now(self) -> datetime.datetime:
         return unix_to_datetime(self.timestamp())
-
-    @memoized
-    def offers_cmd(self):
-        return OffersCommand(self.offers_svc(), self.metadata_dao(), self.filter_svc(), self.offer_export_svc(),
-                             self.datetime_now(), self.ns.data)
 
     @memoized
     def mem_db(self):
@@ -134,78 +121,131 @@ class Context:
         return carscanner.service.VoivodeshipService(self.allegro(), self.voivodeship_dao())
 
     @memoized
-    def allegro_client(self):
-        return allegro_pl.Allegro(self.auth())
-
-    @memoized
     def offer_export_svc(self):
         return carscanner.service.ExportService(self.car_offer_dao(), self.metadata_dao())
 
     # ##### all changed methods from Context go here, ordered by name
 
     @memoized
-    def car_offer_dao(self):
-        return carscanner.dao.CarOfferDao(self.cars_db_v2())
+    def allegro_auth(self):
+        ts = carscanner.dao.MongoTrustStore(self.token_collection())
+        if self.ns.environment == ENV_LOCAL:
+            cs = carscanner.allegro.YamlClientCodeStore(carscanner.allegro.codes_path)
+            allow_fetch = not self.ns.no_fetch
+        elif self.ns.environment == ENV_TRAVIS:
+            cs = carscanner.allegro.EnvironClientCodeStore()
+            allow_fetch = False
+        else:
+            raise ValueError(self.ns.environment)
+        return carscanner.allegro.CarScannerCodeAuth(cs, ts, allow_fetch)
 
     @memoized
-    def cars_db_v1(self):
-        db = tinydb.TinyDB(self.ns.data / 'cars.json', indent=2)
-        self._closeables.append(db)
-        return db
+    def allegro_client(self):
+        return allegro_pl.Allegro(self.allegro_auth())
+
+    @memoized
+    def car_offer_dao(self):
+        return carscanner.dao.CarOfferDao(self.vehicle_collection_v4())
 
     @memoized
     def cars_db_v2(self) -> tinydb.TinyDB:
         db = tinydb.TinyDB(storage=tinydb.storages.MemoryStorage)
-
         from carscanner.dao.car_offer import VEHICLE_V3
-
-        loader = carscanner.data.VehicleShardLoader(db.table(VEHICLE_V3), self.vehicle_data_path())
+        loader = carscanner.data.VehicleShardLoader(db.table(VEHICLE_V3), self.vehicle_data_path_v3())
         loader.load()
 
         self._closeables.append(db)
-        self._closeables.append(loader)
 
         return db
 
     @memoized
-    def migrate_aws(self):
-        from carscanner.service.migration_aws.dynamodb import MigrateAWS
-        from carscanner.dao.car_offer import VEHICLE_V3
-        return MigrateAWS(self.cars_db_v2().table(VEHICLE_V3))
+    def file_backup_service(self):
+        return carscanner.service.FileBackupService(self.car_offer_dao(), self.vehicle_data_path_v3())
+
+    @memoized
+    def meta_col(self):
+        from carscanner.dao.meta import META_V2
+        db = self.mongodb_carscanner_db()
+        return db.get_collection(META_V2, codec_options=db.codec_options)
 
     @memoized
     def metadata_dao(self):
-        return carscanner.dao.MetadataDao(self.cars_db_v1())
+        return carscanner.dao.MetadataDao(self.meta_col())
 
     @memoized
     def migration_service(self):
-        return carscanner.service.migration.MigrationService(self.cars_db_v1(),  self.migration_v2,
-                                                             self.migration_v3)
+        return carscanner.service.migration.MigrationService(
+            self.vehicle_data_path_v1(),
+            self.vehicle_data_path_v3(),
+            self.token_path(),
+            self.vehicle_table_v3,
+            self.mongodb_carscanner_db(),
+            self.token_collection(),
+        )
 
     @memoized
-    def migration_v2(self):
-        return carscanner.service.migration.MigrationV2(self.cars_db_v1())
+    def mongodb_carscanner_db(self) -> pymongo.database.Database:
+        conn = self.mongodb_connection()
+        return conn.get_database(codec_options=conn.codec_options)
 
     @memoized
-    def migration_v3(self):
-        return carscanner.service.migration.MigrationV3(self.cars_db_v1(), self.cars_db_v2(), self.ns.data)
+    def mongodb_connection(self) -> pymongo.MongoClient:
+        import os
+        return pymongo.MongoClient(os.environ.get('MONGODB_URI'), retryWrites=False)
+
+    @memoized
+    def offers_cmd(self):
+        return OffersCommand(
+            self.offers_svc(),
+            self.metadata_dao(),
+            self.filter_svc(),
+            self.offer_export_svc(),
+            self.datetime_now(),
+            self.ns.data,
+            self.file_backup_service(),
+        )
 
     @memoized
     def static_data(self) -> tinydb.TinyDB:
-        storage = tinydb.TinyDB.DEFAULT_STORAGE if self.modify_static else carscanner.data.ReadOnlyMiddleware()
-        db = tinydb.TinyDB(storage=storage, path=self.ns.data / 'static.json', indent=2)
+        import carscanner.dao.resources
+        storage = carscanner.data.ResourceStorage
+        storage = storage if self.modify_static else carscanner.data.ReadOnlyMiddleware(storage)
+        db = tinydb.TinyDB(storage=storage, package=carscanner.dao.resources, resource='static.json', indent=2)
         self._closeables.append(db)
         return db
 
     @memoized
-    def vehicle_data_path(self) -> pathlib.Path:
+    def token_collection(self):
+        db = self.mongodb_carscanner_db()
+        return db.get_collection('token', codec_options=db.codec_options)
+
+    @memoized
+    def token_path(self):
+        return self.ns.data / 'tokens.yaml'
+
+    @memoized
+    def vehicle_collection_v4(self):
+        from carscanner.dao.car_offer import VEHICLE_V3
+        db = self.mongodb_carscanner_db()
+        return db.get_collection(VEHICLE_V3, codec_options=db.codec_options)
+
+    @memoized
+    def vehicle_data_path_v1(self):
+        return self.ns.data / 'cars.json'
+
+    @memoized
+    def vehicle_data_path_v3(self) -> pathlib.Path:
         from carscanner.dao.car_offer import VEHICLE_V3
 
         root_path: pathlib.Path = self.ns.data
 
         data_path = root_path / VEHICLE_V3
-        data_path.mkdir(parents=True, exist_ok=True)
         return data_path
+
+    @memoized
+    def vehicle_table_v3(self) -> tinydb.database.Table:
+        from carscanner.dao.car_offer import VEHICLE_V3
+        return self.cars_db_v2().table(VEHICLE_V3)
 
 
 class CommandLine:
@@ -228,7 +268,6 @@ class CommandLine:
             CarListCommand,
             CriteriaCommand,
             FilterCommand,
-            MigrateCommand,
             OffersCommand,
             TokenCommand,
             VoivodeshipCommand,
@@ -242,8 +281,9 @@ class CommandLine:
         ns.data = ns.data.expanduser()
         self._context.ns = ns
 
+        log.info("Starting")
+
         self._context.migration_service().check_migrate()
-        self._context.metadata_dao().post_init()
 
         try:
             ns.func()
@@ -262,10 +302,10 @@ class TokenCommand:
         token_subparsers = token_parser.add_subparsers()
 
         token_refresh_parser = token_subparsers.add_parser('refresh', help='Refresh token')
-        token_refresh_parser.set_defaults(func=lambda: ctx.auth().refresh_token())
+        token_refresh_parser.set_defaults(func=lambda: ctx.allegro_auth().refresh_token())
 
         token_fetch_opt = token_subparsers.add_parser('fetch', help='Fetch token')
-        token_fetch_opt.set_defaults(func=lambda: ctx.auth().fetch_token())
+        token_fetch_opt.set_defaults(func=lambda: ctx.allegro_auth().fetch_token())
 
 
 class CarListCommand:
@@ -310,20 +350,6 @@ class CriteriaCommand:
         criteria_build_opt.set_defaults(func=build)
 
 
-class MigrateCommand:
-    @staticmethod
-    def build_argparse(subparsers, ctx, _):
-        migrate_parser: argparse.ArgumentParser = subparsers.add_parser('migrate', help='Migrate data to AWS DynamoDB')
-        migrate_parser.set_defaults(func=migrate_parser.print_help)
-        migrate_subparsers = migrate_parser.add_subparsers()
-
-        run_parser = migrate_subparsers.add_parser('run')
-        run_parser.add_argument('--profile', '-p', help='aws configuration profile', metavar='profile')
-        run_parser.add_argument('--endpoint', '-e', help='Connection URL', metavar='endpoint')
-
-        run_parser.set_defaults(func=lambda: ctx.migrate_aws().run(ctx.ns.profile, ctx.ns.endpoint))
-
-
 class OffersCommand:
     @staticmethod
     def build_argparse(subparsers, ctx, print_help):
@@ -335,17 +361,25 @@ class OffersCommand:
         offers_update_opt.set_defaults(func=lambda: ctx.offers_cmd().update())
 
         offers_export_opt = offers_subparsers.add_parser('export')
-        offers_export_opt.set_defaults(func=lambda: ctx.offer_export_svc().export(ctx.ns.output))
+        offers_export_opt.set_defaults(func=lambda: ctx.offer_export_svc().export(ctx.ns.data / ctx.ns.output))
         offers_export_opt.add_argument('--output', '-o', type=pathlib.Path, help='Output json file', metavar='path')
 
-    def __init__(self, offer_svc, meta_dao, filter_svc: carscanner.service.FilterService,
-                 export_svc: carscanner.service.ExportService, ts: datetime.datetime, data_path: pathlib.Path):
+    def __init__(self,
+                 offer_svc,
+                 meta_dao,
+                 filter_svc: carscanner.service.FilterService,
+                 export_svc: carscanner.service.ExportService,
+                 ts: datetime.datetime,
+                 data_path: pathlib.Path,
+                 backup_svc: carscanner.service.FileBackupService,
+                 ):
         self.ts = ts
         self.filter_svc = filter_svc
         self.meta_dao: carscanner.dao.MetadataDao = meta_dao
         self.offer_svc: carscanner.service.OfferService = offer_svc
         self._export_svc = export_svc
         self._data_path = data_path
+        self._backup_service = backup_svc
 
     def update(self):
         self.meta_dao.report()
@@ -354,6 +388,7 @@ class OffersCommand:
         self.meta_dao.update(self.ts)
         export_path = self._data_path / 'export.json'
         self._export_svc.export(export_path)
+        self._backup_service.backup()
 
 
 class VoivodeshipCommand:

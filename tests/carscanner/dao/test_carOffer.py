@@ -2,6 +2,8 @@ import datetime
 import decimal
 from unittest import TestCase
 
+import bson
+
 from carscanner.dao import CarOffer
 
 
@@ -10,11 +12,17 @@ class TestCarOffer(TestCase):
         ts = datetime.datetime.utcnow()
         a = CarOffer(ts, ts, price=decimal.Decimal("1"))
         d = a.to_dict()
-        self.assertIsInstance(d['price'], str)
-        self.assertIsInstance(d['first_spotted'], int)
+        self.assertIsInstance(d['price'], bson.Decimal128)
+        self.assertIsInstance(d['first_spotted'], datetime.datetime)
 
     def test_from_dict(self):
-        o = CarOffer.from_dict({'id': '1', 'first_spotted': 0, 'last_spotted': 0, 'price': '2'})
+        ts = datetime.datetime.fromtimestamp(0, datetime.timezone.utc)
+        o = CarOffer.from_dict(
+            {'_id': {'id': '1', 'provider': 'allegro'},
+             'first_spotted': ts,
+             'last_spotted': ts,
+             'price': bson.Decimal128('2'),
+             })
         self.assertEqual('1', o.id)
-        self.assertEqual(datetime.datetime(1970, 1, 1, 0, 0, tzinfo=datetime.timezone.utc), o.first_spotted)
+        self.assertEqual(ts, o.first_spotted)
         self.assertEqual(decimal.Decimal(2), o.price)
