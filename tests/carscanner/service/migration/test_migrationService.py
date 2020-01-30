@@ -4,23 +4,34 @@ from pathlib import Path
 from unittest import TestCase
 from unittest.mock import Mock
 
+import mongomock
+import yaml
 from bson import Decimal128
 from mongomock import MongoClient
 from tinydb import TinyDB
 
 from carscanner.service.migration import MigrationService
 
+RAW_TOKEN = {'access_token': 'the access token', 'secret_token': 'the secret token'}
+
 
 class TestMigrationService(TestCase):
     def test_check_migrate_zero(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             temprootpath = Path(tmpdir)
+            db = self._db()
+            vehicle_tbl = Mock()
             svc = MigrationService(
                 temprootpath / 'cars.json',
-                temprootpath / 'vehicle', Mock(),
-                self._db(),
+                temprootpath / 'vehicle',
+                temprootpath / 'tokens.yaml',
+                vehicle_tbl,
+                db,
+                db.token,
             )
             svc.check_migrate()
+
+            vehicle_tbl.assert_not_called()
 
     def test_check_migrate_from_previous(self):
         ts = datetime.utcnow()
@@ -55,13 +66,19 @@ class TestMigrationService(TestCase):
                     "imported": False,
                 })
 
+                path_token = temprootpath / 'tekons.yaml'
+                with open(path_token, 'w') as f:
+                    yaml.safe_dump(RAW_TOKEN, f)
+
                 db = self._db()
 
                 svc = MigrationService(
                     path_v1,
                     path_v3,
+                    path_token,
                     lambda: db_v3.table('vehicle'),
                     db,
+                    db.token,
                 )
 
                 svc.check_migrate()
@@ -75,7 +92,7 @@ class TestMigrationService(TestCase):
                     'version': 4,
                     'timestamp': ts.replace(microsecond=int(ts.microsecond / 1000) * 1000),
                     'host': 'host',
-                }, {k: v for k, v in meta_raw.items() if k in ['timestamp', 'version', 'host']})
+                }, {k: v for k, v in meta_raw.items() if k is not '_id'})
 
                 self.assertIn('vehicle', db.list_collection_names())
                 vehicle_col = db.get_collection('vehicle')
@@ -103,6 +120,10 @@ class TestMigrationService(TestCase):
                     vehicle_raw
                 )
 
+                col: mongomock.Collection = db.token
+                raw_token = col.find_one()
+                self.assertEqual(RAW_TOKEN, {k: v for k, v in raw_token.items() if k != '_id'})
+
     def test_migrate_from_current_no_action(self):
         ts = datetime.utcnow()
         ts = ts.replace(microsecond=int(ts.microsecond / 1000) * 1000)
@@ -115,13 +136,19 @@ class TestMigrationService(TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             temprootpath = Path(tmpdir)
+            path_token = temprootpath / 'tekons.yaml'
+            with open(path_token, 'w')as f:
+                yaml.safe_dump({'access_token': 'the access token', 'secret_token': 'the secret token'}, f)
+
             svc = MigrationService(
                 temprootpath / 'cars.json',
                 temprootpath / 'vehicle',
+                path_token,
                 Mock(),
                 db,
+                db.token,
             )
             svc.check_migrate()
 
     def _db(self):
-        return MongoClient('mongodb://fakehost/mockdb', tz_aware=True).get_database()
+        return MongoClient('mongodb://fakehost/mockdb').get_database()

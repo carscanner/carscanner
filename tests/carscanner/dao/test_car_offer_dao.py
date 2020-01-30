@@ -15,4 +15,4 @@ class TestCarOfferDao(TestCase):
         dao.all()
 
     def _db(self):
-        return MongoClient('mongodb://fakehost/mockdb', tz_aware=True).get_database()
+        return MongoClient('mongodb://fakehost/mockdb').get_database()

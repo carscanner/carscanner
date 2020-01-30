@@ -2,12 +2,10 @@ import datetime
 from unittest import TestCase
 from unittest.mock import Mock
 
-import bson
-from mongomock import MongoClient
-from pymongo.collection import Collection
-
 from carscanner.dao import MetadataDao
 from carscanner.dao.meta import META_V2, Metadata
+from mongomock import MongoClient
+from pymongo.collection import Collection
 
 
 class TestMetadataDao(TestCase):
@@ -49,7 +47,7 @@ class TestMetadataDao(TestCase):
     def test_get_timestamp(self):
         col = self._db().meta
 
-        ts = datetime.datetime.fromtimestamp(0, datetime.timezone.utc)
+        ts = datetime.datetime.utcfromtimestamp(0)
         raw_meta = {'host': 'a host', 'timestamp': ts, 'version': MetadataDao.META_VER}
         col.insert_one(raw_meta)
 
@@ -58,4 +56,4 @@ class TestMetadataDao(TestCase):
         self.assertEqual(ts, svc.get_timestamp())
 
     def _db(self):
-        return MongoClient('mongodb://fakehost/mockdb', tz_aware=True).get_database()
+        return MongoClient('mongodb://fakehost/mockdb').get_database()

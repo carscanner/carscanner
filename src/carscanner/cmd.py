@@ -51,19 +51,6 @@ class Context:
         self._modify_static = value
 
     @memoized
-    def auth(self):
-        ts = carscanner.allegro.InsecureTokenStore(self.ns.data / 'tokens.yaml')
-        if self.ns.environment == ENV_LOCAL:
-            cs = carscanner.allegro.YamlClientCodeStore(carscanner.allegro.codes_path)
-            allow_fetch = not self.ns.no_fetch
-        elif self.ns.environment == ENV_TRAVIS:
-            cs = carscanner.allegro.EnvironClientCodeStore()
-            allow_fetch = False
-        else:
-            raise ValueError(self.ns.environment)
-        return carscanner.allegro.CarScannerCodeAuth(cs, ts, allow_fetch)
-
-    @memoized
     def allegro(self):
         return carscanner.allegro.CarscannerAllegro(self.allegro_client())
 
@@ -134,14 +121,27 @@ class Context:
         return carscanner.service.VoivodeshipService(self.allegro(), self.voivodeship_dao())
 
     @memoized
-    def allegro_client(self):
-        return allegro_pl.Allegro(self.auth())
-
-    @memoized
     def offer_export_svc(self):
         return carscanner.service.ExportService(self.car_offer_dao(), self.metadata_dao())
 
     # ##### all changed methods from Context go here, ordered by name
+
+    @memoized
+    def allegro_auth(self):
+        ts = carscanner.dao.MongoTrustStore(self.token_collection())
+        if self.ns.environment == ENV_LOCAL:
+            cs = carscanner.allegro.YamlClientCodeStore(carscanner.allegro.codes_path)
+            allow_fetch = not self.ns.no_fetch
+        elif self.ns.environment == ENV_TRAVIS:
+            cs = carscanner.allegro.EnvironClientCodeStore()
+            allow_fetch = False
+        else:
+            raise ValueError(self.ns.environment)
+        return carscanner.allegro.CarScannerCodeAuth(cs, ts, allow_fetch)
+
+    @memoized
+    def allegro_client(self):
+        return allegro_pl.Allegro(self.allegro_auth())
 
     @memoized
     def car_offer_dao(self):
@@ -177,8 +177,10 @@ class Context:
         return carscanner.service.migration.MigrationService(
             self.vehicle_data_path_v1(),
             self.vehicle_data_path_v3(),
+            self.token_path(),
             self.vehicle_table_v3,
-            self.mongodb_carscanner_db()
+            self.mongodb_carscanner_db(),
+            self.token_collection(),
         )
 
     @memoized
@@ -189,7 +191,7 @@ class Context:
     @memoized
     def mongodb_connection(self) -> pymongo.MongoClient:
         import os
-        return pymongo.MongoClient(os.environ.get('MONGODB_URI'), tz_aware=True, retryWrites=False)
+        return pymongo.MongoClient(os.environ.get('MONGODB_URI'), retryWrites=False)
 
     @memoized
     def offers_cmd(self):
@@ -211,6 +213,15 @@ class Context:
         db = tinydb.TinyDB(storage=storage, package=carscanner.dao.resources, resource='static.json', indent=2)
         self._closeables.append(db)
         return db
+
+    @memoized
+    def token_collection(self):
+        db = self.mongodb_carscanner_db()
+        return db.get_collection('token', codec_options=db.codec_options)
+
+    @memoized
+    def token_path(self):
+        return self.ns.data / 'tokens.yaml'
 
     @memoized
     def vehicle_collection_v4(self):
@@ -291,10 +302,10 @@ class TokenCommand:
         token_subparsers = token_parser.add_subparsers()
 
         token_refresh_parser = token_subparsers.add_parser('refresh', help='Refresh token')
-        token_refresh_parser.set_defaults(func=lambda: ctx.auth().refresh_token())
+        token_refresh_parser.set_defaults(func=lambda: ctx.allegro_auth().refresh_token())
 
         token_fetch_opt = token_subparsers.add_parser('fetch', help='Fetch token')
-        token_fetch_opt.set_defaults(func=lambda: ctx.auth().fetch_token())
+        token_fetch_opt.set_defaults(func=lambda: ctx.allegro_auth().fetch_token())
 
 
 class CarListCommand:

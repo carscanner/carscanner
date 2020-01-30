@@ -27,13 +27,17 @@ class MigrationService:
     def __init__(self,
                  vehicle_path_v1: pathlib.Path,
                  vehicle_path_v3: pathlib.Path,
+                 token_path: pathlib.Path,
                  vehicle_tbl_v3_factory: typing.Callable[[], tinydb.database.Table],
-                 db_v4: pymongo.database.Database
+                 db_v4: pymongo.database.Database,
+                 token_col: pymongo.collection.Collection,
                  ):
         self._vehicle_path_v1 = vehicle_path_v1
         self._vehicle_path_v3 = vehicle_path_v3
+        self._token_path = token_path
         self._vehicle_tbl_v3_factory = vehicle_tbl_v3_factory
         self._db_v4 = db_v4
+        self._token_col = token_col
 
     def check_migrate(self):
         if self.is_current_version():
@@ -67,8 +71,10 @@ class MigrationService:
     def do_migrate(self) -> None:
         self.migrate_data()
         self.migrate_meta()
+        self._migrate_token()
 
         self._vehicle_path_v1.unlink()
+        self._token_path.unlink()
 
     def migrate_data(self):
         self._vehicle_col().create_index([
@@ -101,6 +107,13 @@ class MigrationService:
     @memoized
     def _vehicle_col(self):
         return self._db_v4.get_collection(_VEHICLE_V3, codec_options=self._db_v4.codec_options)
+
+    def _migrate_token(self):
+        with open(str(self._token_path), 'r') as f:
+            import yaml
+            token_dict = yaml.safe_load(f)
+
+        self._token_col.update_one({}, {'$set': token_dict}, upsert=True)
 
 
 def convert(doc: dict) -> dict:
