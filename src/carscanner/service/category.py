@@ -1,7 +1,10 @@
+import logging
 import typing
 
 from carscanner.allegro import CarscannerAllegro
 from carscanner.dao.criteria import CriteriaDao, Criteria
+
+log = logging.getLogger(__name__)
 
 allowed_cat_stacks = [
     ['Allegro', 'Ogłoszenia i usługi', 'Motoryzacja', 'Samochody', 'Osobowe'],
@@ -49,6 +52,7 @@ class GetCategories:
             result.append(this)
 
         if self.keep_digging(stack + [cat_name]):
+            log.debug("get categories under %s", cat_name)
             cats = self._allegro.get_categories(cat_id)
             for sub_cat in cats.categories:
                 self.traverse_cats(result, sub_cat, stack + [cat_name])

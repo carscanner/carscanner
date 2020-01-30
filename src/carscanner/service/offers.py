@@ -3,7 +3,6 @@ import logging
 import typing
 
 import allegro_api.models
-import isodate
 import zeep
 import zeep.exceptions
 
@@ -21,7 +20,7 @@ class OfferService:
         'Oferta dotyczy': 'sprzedaż',
         'Stan': "używane",
     }
-    search_params = {
+    search_params: typing.Dict[str, typing.Any] = {
         'fallback': False,
         'include': ['-all', 'items', 'searchMeta'],
         'sort': '-startTime'
@@ -42,24 +41,28 @@ class OfferService:
     def _get_offers_for_criteria(self, crit: Criteria) -> typing.Iterable[typing.List[allegro_api.models.ListingOffer]]:
         offset = 0
         while True:
-            data = self._allegro.get_listing(self._search_params(crit, offset))
+            data = self._allegro.get_listing(**self._search_params(crit, offset))
 
-            result = data.items.promoted + data.items.regular
-
-            logger.info('get_listing: total %d, this run %d, offset %d', data.search_meta.available_count, len(result),
+            size = len(data.items.promoted) + len(data.items.regular)
+            logger.info('get_listing: total %d, this run %d, offset %d', data.search_meta.available_count, size,
                         offset)
-            yield result
 
-            offset += len(result)
+            if data.items.promoted:
+                yield data.items.promoted
+            if data.items.regular:
+                yield data.items.regular
+
+            offset += size
             if offset >= data.search_meta.available_count:
                 break
 
     def _search_params(self, crit: Criteria, offset=0) -> dict:
         result = OfferService.search_params.copy()
-        result.update(self.filter_service.transform_filters(crit.category_id, OfferService._filter_template))
-        result['category.id'] = crit.category_id
-        result['offset'] = str(offset)
-        result['limit'] = str(self._allegro.get_listing.limit_max)
+        result['dynamic_filters'] = self.filter_service.transform_filters(crit.category_id,
+                                                                          OfferService._filter_template)
+        result['category_id'] = crit.category_id
+        result['offset'] = offset
+        result['limit'] = self._allegro.get_listing.limit_max
 
         return result
 
@@ -67,11 +70,17 @@ class OfferService:
         items = []
         for crit in self.criteria_dao.all():
             for crit_items in self._get_offers_for_criteria(crit):
-                items.extend(crit_items)
+                items.append(crit_items)
+        items = [item for sublist in items for item in sublist]
 
         item_ids = [item.id for item in items]
 
         existing = self.car_offer_dao.search_existing_ids(item_ids)
+
+        found = len(items)
+        existing_len = len(existing)
+        logger.info("Found vehicles: %i, known: %i, new %i", found, existing_len, found - existing_len)
+
         self.car_offer_dao.update_last_spotted(existing, self.timestamp)
 
         # get non-existing ids
@@ -84,7 +93,7 @@ class OfferService:
                 item_id = str(value.itemInfo.itId)
                 self.car_offers_builder.update_from_item_info_struct(car_offers[item_id], value)
 
-        self.car_offer_dao.insert_multiple(car for car in car_offers.values() if car.is_valid())
+        self.car_offer_dao.insert_multiple([car for car in car_offers.values() if car.is_valid()])
 
     def _get_items_info(self, offer_ids: typing.List[str]) -> typing.Iterable[zeep.xsd.CompoundValue]:
         chunk_no = 1
@@ -102,10 +111,3 @@ class OfferService:
                     except zeep.exceptions.TransportError as x2:
                         logger.warning('Could not fetch item (%s) info: %s', item_id, x2)
             chunk_no += 1
-
-    def _get_start_period_str(self, cat_id: str) -> str:
-        delta: datetime.timedelta = self.timestamp - self._last_run
-
-        offers_since_delta = self.filter_service.find_min_timedelta_gt(cat_id, delta)
-
-        return isodate.duration_isoformat(offers_since_delta)

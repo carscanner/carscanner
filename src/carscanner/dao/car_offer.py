@@ -3,9 +3,8 @@ import datetime
 import decimal
 import typing
 
-import tinydb
-
-from carscanner.utils import datetime_to_unix, unix_to_datetime
+import bson
+import pymongo
 
 _K_PRICE = 'price'
 _K_FIRST_SPOTTED = 'first_spotted'
@@ -33,53 +32,50 @@ class CarOffer:
     imported: bool = None
 
     def to_dict(self):
-        result = self.__dict__
-        if self.price is not None:
-            result[_K_PRICE] = str(self.price)
-        result[_K_FIRST_SPOTTED] = datetime_to_unix(self.first_spotted)
-        result[_K_LAST_SPOTTED] = datetime_to_unix(self.last_spotted)
+        result = self.__dict__.copy()
+        result[_K_PRICE] = bson.Decimal128(self.price)
+        result['_id'] = {'provider': 'allegro', 'id': self.id}
+        del result['id']
 
         return result
 
     @classmethod
     def from_dict(cls, d: dict):
-        result = cls(**d)
-        result.first_spotted = unix_to_datetime(d[_K_FIRST_SPOTTED])
-        result.last_spotted = unix_to_datetime(d[_K_LAST_SPOTTED])
-        if result.price:
-            result.price = decimal.Decimal(d[_K_PRICE])
-        return result
+        doc = d.copy()
+        doc['id'] = d['_id']['id']
+        del doc['_id']
+        doc['price'] = doc['price'].to_decimal()
+        return cls(**doc)
 
     def is_valid(self) -> bool:
         return self.year is not None and self.mileage is not None
 
 
 class CarOfferDao:
-    def __init__(self, db: tinydb.TinyDB):
-        self._tbl: tinydb.database.Table = db.table(VEHICLE_V3)
+    def __init__(self, col: pymongo.collection.Collection):
+        self._col = col
 
-    def insert_multiple(self, car_offers: typing.Iterable[CarOffer]) -> typing.List[int]:
-        return self._tbl.insert_multiple(o.to_dict() for o in car_offers)
+    def insert_multiple(self, car_offers: typing.List[CarOffer]) -> typing.List[int]:
+        if len(car_offers):
+            return self._col.insert_many(o.to_dict() for o in car_offers).inserted_ids
 
     def _search_ids(self, cond) -> typing.List[str]:
-        return [d['id'] for d in self._tbl.search(cond)]
+        return [d['_id']['id'] for d in self._col.find(cond, {'_id.id': 1})]
 
     def search_existing_ids(self, ids: typing.List[str]) -> typing.List[str]:
-        return self._search_ids(tinydb.Query().id.one_of(ids))
+        return self._search_ids({'_id.id': {'$in': ids}})
 
     def update_last_spotted(self, ids: typing.List[str], timestamp: datetime.datetime) -> typing.List[int]:
-        return self._tbl.update({_K_LAST_SPOTTED: datetime_to_unix(timestamp)}, tinydb.Query().id.one_of(ids))
-
-    def search_by_last_spotted_and_year_gte(self, ts: int, min_year: int) -> typing.List[CarOffer]:
-        q = tinydb.Query()
-        docs = self._tbl.search((q.last_spotted == ts) & (q.year >= min_year))
-        return [CarOffer.from_dict(d) for d in docs]
+        return self._col.update_many({'_id.id': {'$in': ids}}, {'$set': {_K_LAST_SPOTTED: timestamp}})
 
     def search_by_year_between_and_mileage_lt(self, min_year: int, max_year, mileage: int) -> typing.List[CarOffer]:
-        q = tinydb.Query()
-        docs = self._tbl.search(
-            (q.year >= min_year) &
-            (q.year < max_year) &
-            (q.mileage < mileage)
+        docs = self._col.find({
+            'year': {'$gte': min_year, '$lt': max_year},
+            'mileage': {"$lt": mileage},
+        },
+            sort=[('_id.id', pymongo.ASCENDING)],
         )
         return [CarOffer.from_dict(d) for d in docs]
+
+    def all(self) -> typing.Iterable[CarOffer]:
+        return (CarOffer.from_dict(d) for d in self._col.find().sort([('_id.id', 1)]))

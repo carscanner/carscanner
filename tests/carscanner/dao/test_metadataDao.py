@@ -2,43 +2,36 @@ import datetime
 from unittest import TestCase
 from unittest.mock import Mock
 
-from tinydb import TinyDB
-from tinydb.database import Table
-from tinydb.storages import MemoryStorage
-
 from carscanner.dao import MetadataDao
 from carscanner.dao.meta import META_V2, Metadata
+from mongomock import MongoClient
+from pymongo.collection import Collection
 
 
 class TestMetadataDao(TestCase):
     def test_init(self):
         db_mock = Mock()
+        db_mock.find_one = Mock(return_value=None)
         MetadataDao(db_mock)
 
-        db_mock.table.called_once_with_arguments(META_V2)
+        db_mock.find_one.called_once_with_arguments(META_V2)
 
     def test_post_init_empty(self):
-        db = TinyDB(storage=MemoryStorage)
-        svc = MetadataDao(db)
-
-        svc.post_init()
+        svc = MetadataDao(self._db().meta)
 
         self.assertIsNotNone(svc._meta)
 
     def test_post_init_non_empty(self):
-        db = TinyDB(storage=MemoryStorage)
-        tbl: Table = db.table(META_V2)
+        col: Collection = self._db().meta
         raw_meta = {'host': 'a host', 'timestamp': 'a time stamp', 'version': MetadataDao.META_VER}
-        tbl.insert(raw_meta)
+        col.insert_one(raw_meta)
 
-        svc = MetadataDao(db)
-
-        svc.post_init()
+        svc = MetadataDao(col)
 
         self.assertEqual(Metadata.from_dict(raw_meta), svc._meta)
 
     def test_update(self):
-        svc = MetadataDao(TinyDB(storage=MemoryStorage))
+        svc = MetadataDao(self._db().meta)
 
         now = datetime.datetime.now(datetime.timezone.utc)
 
@@ -47,20 +40,20 @@ class TestMetadataDao(TestCase):
         self.assertEqual(now, svc.get_timestamp())
 
     def test_update_none(self):
-        svc = MetadataDao(TinyDB(storage=MemoryStorage))
+        svc = MetadataDao(self._db().meta)
 
         self.assertRaises(AttributeError, lambda: svc.update(None))
 
     def test_get_timestamp(self):
-        db = TinyDB(storage=MemoryStorage)
-        tbl: Table = db.table(META_V2)
+        col = self._db().meta
 
-        ts_str = '1970-01-01T00:00:00+00:00'
-        raw_meta = {'host': 'a host', 'timestamp': ts_str, 'version': MetadataDao.META_VER}
-        tbl.insert(raw_meta)
+        ts = datetime.datetime.utcfromtimestamp(0)
+        raw_meta = {'host': 'a host', 'timestamp': ts, 'version': MetadataDao.META_VER}
+        col.insert_one(raw_meta)
 
-        svc = MetadataDao(db)
+        svc = MetadataDao(col)
 
-        svc.post_init()
+        self.assertEqual(ts, svc.get_timestamp())
 
-        self.assertEqual(ts_str, svc.get_timestamp().isoformat())
+    def _db(self):
+        return MongoClient('mongodb://fakehost/mockdb').get_database()

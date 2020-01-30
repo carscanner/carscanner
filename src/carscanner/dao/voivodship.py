@@ -2,12 +2,9 @@ import typing
 
 import tinydb
 
-from .base import BaseDao
 
-
-class VoivodeshipDao(BaseDao):
+class VoivodeshipDao:
     def __init__(self, db: tinydb.TinyDB):
-        super().__init__(db)
         self._tbl: tinydb.database.Table = db.table('voivodeship')
         self._q = tinydb.Query()
 

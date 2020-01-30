@@ -27,10 +27,15 @@ class CarOffersBuilder:
         return CarOffer(first_spotted=self.ts, last_spotted=self.ts)
 
     @staticmethod
-    def update_from_listing_model(car, model):
+    def update_from_listing_model(car: CarOffer, model):
         car.id = model.id
         car.name = model.name
-        car.price = Decimal(model.selling_mode.price.amount)
+
+        price = model.selling_mode.price.amount
+        if not isinstance(price, str):
+            log.warning("price %s (%s) is not a string for ID = %s", type(price), price, model.id)
+        car.price = Decimal(str(price))
+
         car.url = 'https://allegro.pl/oferta/' + model.id
 
     def update_from_item_info_struct(self, car: CarOffer, o: zeep.xsd.valueobjects.CompoundValue):
