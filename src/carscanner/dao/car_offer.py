@@ -30,6 +30,7 @@ class CarOffer:
     voivodeship: str = None
     location: str = None
     imported: bool = None
+    fuel: str = None
 
     def to_dict(self):
         result = self.__dict__.copy()

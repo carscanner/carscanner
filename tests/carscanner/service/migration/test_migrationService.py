@@ -92,7 +92,7 @@ class TestMigrationService(TestCase):
                     'version': 4,
                     'timestamp': ts.replace(microsecond=int(ts.microsecond / 1000) * 1000),
                     'host': 'host',
-                }, {k: v for k, v in meta_raw.items() if k is not '_id'})
+                }, {k: v for k, v in meta_raw.items() if k != '_id'})
 
                 self.assertIn('vehicle', db.list_collection_names())
                 vehicle_col = db.get_collection('vehicle')

@@ -15,6 +15,8 @@ _KEY_YEAR = 'Rok produkcji'
 _KEY_MILEAGE = 'Przebieg'
 _KEY_ORIGIN = 'Pochodzenie'
 _KEY_MAKE = 'Marka'
+_KEY_FUEL = 'Rodzaj paliwa'
+_KEY_COUNTRY_ORIGIN = "Kraj pochodzenia"
 
 
 class CarOffersBuilder:
@@ -93,8 +95,12 @@ def _update_from_item_info_attributes(car: CarOffer, o: typing.List[zeep.xsd.Com
         car.mileage = int(d[_KEY_MILEAGE][0])
     if _KEY_ORIGIN in d:
         car.imported = d[_KEY_ORIGIN][0] == 'import'
+    elif _KEY_COUNTRY_ORIGIN in d:
+        car.imported = d[_KEY_COUNTRY_ORIGIN] != 'Polska'
     if _KEY_MAKE in d:
         car.make = d[_KEY_MAKE][0]
+    if _KEY_FUEL in d:
+        car.fuel = d[_KEY_FUEL][0]
 
 
 def _update_from_item_images(car: CarOffer, o: typing.List[zeep.xsd.CompoundValue]):
