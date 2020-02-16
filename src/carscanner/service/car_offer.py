@@ -43,7 +43,7 @@ class CarOffersBuilder:
     def update_from_item_info_struct(self, car: CarOffer, o: zeep.xsd.valueobjects.CompoundValue):
         try:
             _update_from_item_cats(car, o.itemCats.item)
-            _update_from_item_info_attributes(car, o.itemAttribs.item)
+            _update_from_item_info_attributes(car, {a.attribName: a.attribValues.item for a in o.itemAttribs.item})
             self._update_from_item_info(car, o.itemInfo)
             if o.itemImages is not None:
                 _update_from_item_images(car, o.itemImages.item)
@@ -87,8 +87,7 @@ def _update_from_item_cats(car: CarOffer, cats: list):
                 car.model = model
 
 
-def _update_from_item_info_attributes(car: CarOffer, o: typing.List[zeep.xsd.CompoundValue]):
-    d = _attrib_list_to_dict(o)
+def _update_from_item_info_attributes(car: CarOffer, d: typing.Dict[str, typing.List[str]]):
     if _KEY_YEAR in d:
         car.year = int(d[_KEY_YEAR][0])
     if _KEY_MILEAGE in d:
@@ -105,10 +104,6 @@ def _update_from_item_info_attributes(car: CarOffer, o: typing.List[zeep.xsd.Com
 
 def _update_from_item_images(car: CarOffer, o: typing.List[zeep.xsd.CompoundValue]):
     car.image = _get_image(o, 2)
-
-
-def _attrib_list_to_dict(attrib_list: list) -> dict:
-    return {a.attribName: a.attribValues.item for a in attrib_list}
 
 
 def _get_image(images: typing.List[zeep.xsd.CompoundValue], image_type) -> typing.Optional[str]:

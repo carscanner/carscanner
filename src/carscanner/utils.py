@@ -17,6 +17,9 @@ def unix_to_datetime(timestamp: int) -> datetime.datetime:
 def configure_logging() -> None:
     handler = logging.StreamHandler()
     handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s:%(name)s:%(message)s"))
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    root.addHandler(handler)
     for name, level in {'carscanner': logging.DEBUG,
                         'allegro_pl': logging.DEBUG,
                         '__main__': logging.DEBUG,
@@ -24,7 +27,6 @@ def configure_logging() -> None:
                         }.items():
         log = logging.getLogger(name)
         log.setLevel(level)
-        log.addHandler(handler)
 
 
 def chunks(l, n):
