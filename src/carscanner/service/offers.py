@@ -89,7 +89,7 @@ class OfferService:
         # pull their details
         car_offers = self.car_offers_builder.to_car_offers(new_items)
         for item_info_chunk in self._get_items_info(list(car_offers.keys())):
-            for value in item_info_chunk.arrayItemListInfo.item:
+            for value in item_info_chunk:
                 item_id = str(value.itemInfo.itId)
                 self.car_offers_builder.update_from_item_info_struct(car_offers[item_id], value)
 
@@ -102,12 +102,15 @@ class OfferService:
         for chunk in chunks(offer_ids, self._allegro.get_items_info.items_limit):
             logger.info('get_items_info: chunk %d out of %d', chunk_no, chunks_count)
             try:
-                yield self._allegro.get_items_info(chunk, True, True, True)
+                yield self._do_get_items_info(chunk)
             except zeep.exceptions.TransportError:
                 # https://github.com/allegro/allegro-api/issues/1585
                 for item_id in chunk:
                     try:
-                        yield self._allegro.get_items_info([item_id], True, True, True)
+                        yield self._do_get_items_info([item_id])
                     except zeep.exceptions.TransportError as x2:
                         logger.warning('Could not fetch item (%s) info: %s', item_id, x2)
             chunk_no += 1
+
+    def _do_get_items_info(self,offer_ids: typing.List[str]):
+        return self._allegro.get_items_info(offer_ids, True, True, True).arrayItemListInfo.item

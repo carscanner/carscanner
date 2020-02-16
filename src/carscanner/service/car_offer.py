@@ -15,6 +15,8 @@ _KEY_YEAR = 'Rok produkcji'
 _KEY_MILEAGE = 'Przebieg'
 _KEY_ORIGIN = 'Pochodzenie'
 _KEY_MAKE = 'Marka'
+_KEY_FUEL = 'Rodzaj paliwa'
+_KEY_COUNTRY_ORIGIN = "Kraj pochodzenia"
 
 
 class CarOffersBuilder:
@@ -41,7 +43,7 @@ class CarOffersBuilder:
     def update_from_item_info_struct(self, car: CarOffer, o: zeep.xsd.valueobjects.CompoundValue):
         try:
             _update_from_item_cats(car, o.itemCats.item)
-            _update_from_item_info_attributes(car, o.itemAttribs.item)
+            _update_from_item_info_attributes(car, {a.attribName: a.attribValues.item for a in o.itemAttribs.item})
             self._update_from_item_info(car, o.itemInfo)
             if o.itemImages is not None:
                 _update_from_item_images(car, o.itemImages.item)
@@ -85,24 +87,23 @@ def _update_from_item_cats(car: CarOffer, cats: list):
                 car.model = model
 
 
-def _update_from_item_info_attributes(car: CarOffer, o: typing.List[zeep.xsd.CompoundValue]):
-    d = _attrib_list_to_dict(o)
+def _update_from_item_info_attributes(car: CarOffer, d: typing.Dict[str, typing.List[str]]):
     if _KEY_YEAR in d:
         car.year = int(d[_KEY_YEAR][0])
     if _KEY_MILEAGE in d:
         car.mileage = int(d[_KEY_MILEAGE][0])
     if _KEY_ORIGIN in d:
         car.imported = d[_KEY_ORIGIN][0] == 'import'
+    elif _KEY_COUNTRY_ORIGIN in d:
+        car.imported = d[_KEY_COUNTRY_ORIGIN] != 'Polska'
     if _KEY_MAKE in d:
         car.make = d[_KEY_MAKE][0]
+    if _KEY_FUEL in d:
+        car.fuel = d[_KEY_FUEL][0]
 
 
 def _update_from_item_images(car: CarOffer, o: typing.List[zeep.xsd.CompoundValue]):
     car.image = _get_image(o, 2)
-
-
-def _attrib_list_to_dict(attrib_list: list) -> dict:
-    return {a.attribName: a.attribValues.item for a in attrib_list}
 
 
 def _get_image(images: typing.List[zeep.xsd.CompoundValue], image_type) -> typing.Optional[str]:
