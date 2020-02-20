@@ -2,10 +2,11 @@ import datetime
 from unittest import TestCase
 from unittest.mock import Mock
 
-from carscanner.dao import MetadataDao
-from carscanner.dao.meta import META_V2, Metadata
 from mongomock import MongoClient
 from pymongo.collection import Collection
+
+from carscanner.dao import MetadataDao
+from carscanner.dao.meta import META_V2, Metadata, META_VER
 
 
 class TestMetadataDao(TestCase):
@@ -23,7 +24,7 @@ class TestMetadataDao(TestCase):
 
     def test_post_init_non_empty(self):
         col: Collection = self._db().meta
-        raw_meta = {'host': 'a host', 'timestamp': 'a time stamp', 'version': MetadataDao.META_VER}
+        raw_meta = {'host': 'a host', 'timestamp': 'a time stamp', 'version': META_VER}
         col.insert_one(raw_meta)
 
         svc = MetadataDao(col)
@@ -47,8 +48,8 @@ class TestMetadataDao(TestCase):
     def test_get_timestamp(self):
         col = self._db().meta
 
-        ts = datetime.datetime.utcfromtimestamp(0)
-        raw_meta = {'host': 'a host', 'timestamp': ts, 'version': MetadataDao.META_VER}
+        ts = datetime.datetime.utcnow().replace(microsecond=0)
+        raw_meta = {'host': 'a host', 'timestamp': ts, 'version': META_VER}
         col.insert_one(raw_meta)
 
         svc = MetadataDao(col)

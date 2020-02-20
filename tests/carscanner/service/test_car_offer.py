@@ -50,7 +50,7 @@ class TestWebCarOffer(TestCase):
         car_item_info = items_info_result[0]
 
         ts = datetime.datetime.utcnow()
-        car_offer = CarOffer(ts, ts)
+        car_offer = CarOffer(ts)
         attribs = {a.attribName: a.attribValues.item for a in car_item_info.itemAttribs.item}
         _update_from_item_info_attributes(car_offer, attribs)
 

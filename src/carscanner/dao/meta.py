@@ -8,6 +8,8 @@ import pymongo
 
 K_TS = 'timestamp'
 META_V2 = 'meta'
+META_VER: int = 5
+"""Metadata file version expected by the software"""
 
 log = logging.getLogger(__name__)
 
@@ -27,21 +29,18 @@ class Metadata:
 
 
 class MetadataDao:
-    META_VER: int = 4
-    """Metadata file version expected by the software"""
-
     def __init__(self, col: pymongo.collection.Collection):
         self._col = col
         self._meta: typing.Optional[Metadata] = None
 
         raw_meta = self._col.find_one({})
         self._meta = Metadata.from_dict(raw_meta) if raw_meta else MetadataDao._init_metadata()
-        assert self._meta.version == MetadataDao.META_VER
+        assert self._meta.version == META_VER
 
     def update(self, ts: datetime.datetime):
         if ts is None:
             raise AttributeError('ts is None')
-        self._meta = Metadata(host=platform.node(), timestamp=ts, version=MetadataDao.META_VER)
+        self._meta = Metadata(host=platform.node(), timestamp=ts, version=META_VER)
         self._col.update_one({}, {'$set': self._meta.to_dict()}, upsert=True)
 
     def report(self):
@@ -55,4 +54,4 @@ class MetadataDao:
 
     @staticmethod
     def _init_metadata() -> Metadata:
-        return Metadata(platform.node(), None, MetadataDao.META_VER)
+        return Metadata(platform.node(), None, META_VER)

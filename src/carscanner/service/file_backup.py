@@ -25,7 +25,8 @@ class FileBackupService:
         result = obj.__dict__.copy()
         result[_K_PRICE] = str(obj.price)
         result[_K_FIRST_SPOTTED] = datetime_to_unix(obj.first_spotted)
-        result[_K_LAST_SPOTTED] = datetime_to_unix(obj.last_spotted)
+        if obj.last_spotted:
+            result[_K_LAST_SPOTTED] = datetime_to_unix(obj.last_spotted)
 
         return result
 

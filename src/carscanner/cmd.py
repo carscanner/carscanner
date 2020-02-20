@@ -65,18 +65,6 @@ class Context:
         return db
 
     @memoized
-    def offers_svc(self):
-        return carscanner.service.OfferService(
-            self.allegro(),
-            self.criteria_dao(),
-            self.car_offers_builder(),
-            self.car_offer_dao(),
-            self.filter_svc(),
-            self.metadata_dao(),
-            self.datetime_now()
-        )
-
-    @memoized
     def filter_svc(self):
         return carscanner.service.FilterService(
             self.allegro(),
@@ -148,17 +136,6 @@ class Context:
         return carscanner.dao.CarOfferDao(self.vehicle_collection_v4())
 
     @memoized
-    def cars_db_v2(self) -> tinydb.TinyDB:
-        db = tinydb.TinyDB(storage=tinydb.storages.MemoryStorage)
-        from carscanner.dao.car_offer import VEHICLE_V3
-        loader = carscanner.data.VehicleShardLoader(db.table(VEHICLE_V3), self.vehicle_data_path_v3())
-        loader.load()
-
-        self._closeables.append(db)
-
-        return db
-
-    @memoized
     def file_backup_service(self):
         return carscanner.service.FileBackupService(self.car_offer_dao(), self.vehicle_data_path_v3())
 
@@ -175,12 +152,7 @@ class Context:
     @memoized
     def migration_service(self):
         return carscanner.service.migration.MigrationService(
-            self.vehicle_data_path_v1(),
-            self.vehicle_data_path_v3(),
-            self.token_path(),
-            self.vehicle_table_v3,
             self.mongodb_carscanner_db(),
-            self.token_collection(),
         )
 
     @memoized
@@ -206,6 +178,17 @@ class Context:
         )
 
     @memoized
+    def offers_svc(self):
+        return carscanner.service.OfferService(
+            self.allegro(),
+            self.criteria_dao(),
+            self.car_offers_builder(),
+            self.car_offer_dao(),
+            self.filter_svc(),
+            self.datetime_now(),
+        )
+
+    @memoized
     def static_data(self) -> tinydb.TinyDB:
         import carscanner.dao.resources
         storage = carscanner.data.ResourceStorage
@@ -220,18 +203,10 @@ class Context:
         return db.get_collection('token', codec_options=db.codec_options)
 
     @memoized
-    def token_path(self):
-        return self.ns.data / 'tokens.yaml'
-
-    @memoized
     def vehicle_collection_v4(self):
         from carscanner.dao.car_offer import VEHICLE_V3
         db = self.mongodb_carscanner_db()
         return db.get_collection(VEHICLE_V3, codec_options=db.codec_options)
-
-    @memoized
-    def vehicle_data_path_v1(self):
-        return self.ns.data / 'cars.json'
 
     @memoized
     def vehicle_data_path_v3(self) -> pathlib.Path:
@@ -241,11 +216,6 @@ class Context:
 
         data_path = root_path / VEHICLE_V3
         return data_path
-
-    @memoized
-    def vehicle_table_v3(self) -> tinydb.database.Table:
-        from carscanner.dao.car_offer import VEHICLE_V3
-        return self.cars_db_v2().table(VEHICLE_V3)
 
 
 class CommandLine:
