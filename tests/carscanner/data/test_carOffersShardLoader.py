@@ -60,10 +60,8 @@ class TestCarOffersShardLoader(TestCase):
             svc = VehicleShardLoader(tbl, root)
 
             tbl.insert_multiple([
-                {'id': '1', 'first_spotted': ts, 'last_spotted': ts2},
-                {'id': '2', 'first_spotted': ts, 'last_spotted': ts2},
-                {'id': '3', 'first_spotted': ts2, 'last_spotted': ts2},
-                {'id': '4', 'first_spotted': ts2, 'last_spotted': ts2}
+                {'id': '1', 'first_spotted': ts},
+                {'id': '2', 'first_spotted': ts2},
             ])
 
             svc.close()
@@ -71,13 +69,11 @@ class TestCarOffersShardLoader(TestCase):
             with TinyDB(root / '1970' / '01-01.json') as db_shard:
                 tbl_shard: Table = db_shard.table(VEHICLE_V3)
                 docs = tbl_shard.all()
-                self.assertEqual(2, len(docs))
-                self.assertIn({'id': '1', 'first_spotted': ts, 'last_spotted': ts2}, docs)
-                self.assertIn({'id': '2', 'first_spotted': ts, 'last_spotted': ts2}, docs)
+                self.assertEqual(1, len(docs))
+                self.assertIn({'id': '1', 'first_spotted': ts}, docs)
 
             with TinyDB(root / '1970' / '01-02.json') as db_shard:
                 tbl_shard: Table = db_shard.table(VEHICLE_V3)
                 docs = tbl_shard.all()
-                self.assertEqual(2, len(docs))
-                self.assertIn({'id': '3', 'first_spotted': ts2, 'last_spotted': ts2}, docs)
-                self.assertIn({'id': '4', 'first_spotted': ts2, 'last_spotted': ts2}, docs)
+                self.assertEqual(1, len(docs))
+                self.assertIn({'id': '2', 'first_spotted': ts2}, docs)

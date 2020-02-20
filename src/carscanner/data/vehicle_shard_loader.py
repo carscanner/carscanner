@@ -1,5 +1,4 @@
 import datetime
-import itertools
 import logging
 import pathlib
 
@@ -27,16 +26,12 @@ class VehicleShardLoader:
         utils.walk_path(self._data_root, load_file)
 
     def close(self) -> None:
+        log.info("Saving as shards")
         shards = {}
-        timestamps = []
         all_data = sorted(self._vehicle_tbl.all(), key=lambda i: (i['first_spotted'], i['id']))
         for doc in all_data:
             shard = VehicleShardLoader._shard_value(doc)
             shards.setdefault(shard, []).append(doc)
-            timestamps.append(doc['last_spotted'])
-
-        last_timestamp = max(itertools.chain([0], timestamps))
-        log.debug('Max timestamp: %i', last_timestamp)
 
         for shard_val, data in sorted(shards.items(), key=lambda t: t[0]):
             path = VehicleShardLoader._path_for_shard(shard_val)
@@ -57,7 +52,3 @@ class VehicleShardLoader:
     @staticmethod
     def _path_for_shard(shard_date: datetime.date) -> pathlib.Path:
         return pathlib.Path(str(shard_date.year)) / f'{shard_date.month:02}-{shard_date.day:02}.json'
-
-    @staticmethod
-    def _is_active(tbl: tinydb.database.Table, timestamp: int) -> bool:
-        return tbl.count(tinydb.Query().last_spotted == timestamp) > 0

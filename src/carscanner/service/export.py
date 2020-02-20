@@ -42,8 +42,7 @@ class ExportModel:
 
         for car in offers:
             self.average.update(car)
-            if datetime_to_unix(car.last_spotted) >= ts:
-                self.update(car)
+            self.update(car)
 
     def update(self, car: CarOffer):
         self.car_series.update(car)

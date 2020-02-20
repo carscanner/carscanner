@@ -7,7 +7,7 @@ import zeep
 import zeep.exceptions
 
 from carscanner.allegro import CarscannerAllegro
-from carscanner.dao import CarOfferDao, Criteria, MetadataDao
+from carscanner.dao import CarOfferDao, Criteria
 from carscanner.utils import chunks
 from .car_offer import CarOffersBuilder
 from .filter import FilterService
@@ -26,17 +26,20 @@ class OfferService:
         'sort': '-startTime'
     }
 
-    def __init__(self, allegro: CarscannerAllegro, criteria_dao, car_offers_builder: CarOffersBuilder, car_offer_dao,
-                 filter_service, meta_dao: MetadataDao, ts):
+    def __init__(
+            self, allegro: CarscannerAllegro,
+            criteria_dao,
+            car_offers_builder: CarOffersBuilder,
+            car_offer_dao,
+            filter_service,
+            ts: datetime.datetime,
+    ):
         self._allegro = allegro
-
         self.criteria_dao = criteria_dao
         self.car_offers_builder = car_offers_builder
         self.car_offer_dao: CarOfferDao = car_offer_dao
         self.filter_service: FilterService = filter_service
         self.timestamp: datetime.datetime = ts
-
-        self._last_run: datetime.datetime = meta_dao.get_timestamp()
 
     def _get_offers_for_criteria(self, crit: Criteria) -> typing.Iterable[typing.List[allegro_api.models.ListingOffer]]:
         offset = 0
@@ -81,7 +84,7 @@ class OfferService:
         existing_len = len(existing)
         logger.info("Found vehicles: %i, known: %i, new %i", found, existing_len, found - existing_len)
 
-        self.car_offer_dao.update_last_spotted(existing, self.timestamp)
+        self.car_offer_dao.update_status(existing, self.timestamp)
 
         # get non-existing ids
         new_items = [item for item in items if item.id not in existing]
@@ -112,5 +115,5 @@ class OfferService:
                         logger.warning('Could not fetch item (%s) info: %s', item_id, x2)
             chunk_no += 1
 
-    def _do_get_items_info(self,offer_ids: typing.List[str]):
+    def _do_get_items_info(self, offer_ids: typing.List[str]):
         return self._allegro.get_items_info(offer_ids, True, True, True).arrayItemListInfo.item

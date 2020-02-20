@@ -26,7 +26,7 @@ class CarOffersBuilder:
         self.ts = ts
 
     def new_car_offer(self):
-        return CarOffer(first_spotted=self.ts, last_spotted=self.ts)
+        return CarOffer(first_spotted=self.ts)
 
     @staticmethod
     def update_from_listing_model(car: CarOffer, model):
