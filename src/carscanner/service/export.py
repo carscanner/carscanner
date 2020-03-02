@@ -1,11 +1,13 @@
 import decimal
+import json
+import logging
 import pathlib
 import typing
 
 from carscanner.dao import CarOffer, CarOfferDao, MetadataDao
 from carscanner.utils import datetime_to_unix, join_str
 
-import json
+log = logging.getLogger(__name__)
 
 
 class ExportService:
@@ -14,6 +16,7 @@ class ExportService:
         self._meta_dao = metadata_dao
 
     def export(self, output: pathlib.Path):
+        log.info("Exporting data for UI")
         output = output.expanduser()
         now = self._meta_dao.get_timestamp()
         ts = datetime_to_unix(now)
@@ -22,7 +25,6 @@ class ExportService:
         max_age = 20
         min_year = now_year - max_age
 
-        # TODO move mileage to the filter in `offers update`,
         offers = self._dao.search_by_year_between_and_mileage_lt(min_year, now_year, 1_000_000)
 
         model = ExportModel(ts, min_year, now_year, max_age, offers)

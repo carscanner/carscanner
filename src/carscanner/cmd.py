@@ -1,4 +1,5 @@
 import argparse
+import concurrent.futures as futures
 import datetime
 import json
 import logging
@@ -175,6 +176,7 @@ class Context:
             self.datetime_now(),
             self.ns.data,
             self.file_backup_service(),
+            self.executor(),
         )
 
     @memoized
@@ -216,6 +218,17 @@ class Context:
 
         data_path = root_path / VEHICLE_V3
         return data_path
+
+    @memoized
+    def executor(self):
+        executor = futures.ThreadPoolExecutor()
+
+        def close(*_):
+            futures.ThreadPoolExecutor.shutdown(executor, True)
+
+        executor.close = close
+        self._closeables.append(executor)
+        return executor
 
 
 class CommandLine:
@@ -342,6 +355,7 @@ class OffersCommand:
                  ts: datetime.datetime,
                  data_path: pathlib.Path,
                  backup_svc: carscanner.service.FileBackupService,
+                 executor: futures.Executor,
                  ):
         self.ts = ts
         self.filter_svc = filter_svc
@@ -350,15 +364,15 @@ class OffersCommand:
         self._export_svc = export_svc
         self._data_path = data_path
         self._backup_service = backup_svc
+        self._executor = executor
 
     def update(self):
         self.meta_dao.report()
         self.filter_svc.load_filters()
         self.offer_svc.get_offers()
         self.meta_dao.update(self.ts)
-        export_path = self._data_path / 'export.json'
-        self._export_svc.export(export_path)
-        self._backup_service.backup()
+        self._executor.submit(self._export_svc.export, self._data_path / 'export.json')
+        self._executor.submit(self._backup_service.backup)
 
 
 class VoivodeshipCommand:

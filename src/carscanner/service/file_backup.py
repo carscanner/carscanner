@@ -1,3 +1,4 @@
+import logging
 import pathlib
 
 import tinydb
@@ -7,6 +8,8 @@ from carscanner.dao.car_offer import _K_PRICE, _K_FIRST_SPOTTED, _K_LAST_SPOTTED
 from carscanner.data import VehicleShardLoader
 from carscanner.utils import datetime_to_unix
 
+log = logging.getLogger(__name__)
+
 
 class FileBackupService:
     def __init__(self, dao: CarOfferDao, vehicle_path_v3: pathlib.Path):
@@ -14,6 +17,7 @@ class FileBackupService:
         self._vehicle_path_v3 = vehicle_path_v3
 
     def backup(self):
+        log.info('Preparing backup')
         with tinydb.TinyDB(storage=tinydb.storages.MemoryStorage) as db:
             tbl: tinydb.database.Table = db.table(_VEHICLE_V3)
             tbl.insert_multiple(FileBackupService._convert(obj) for obj in self._dao.all())
