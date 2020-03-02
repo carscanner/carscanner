@@ -82,8 +82,9 @@ class CarOfferDao:
             _K_ACTIVE: True,
         }})
 
-        if result.modified_count != 0:
-            log.info('%d inactive offers were activated')
+        modified_count = result.modified_count
+        if modified_count != 0:
+            log.info('%d inactive offers were activated', modified_count)
 
         return self._col.update_many(
             {
