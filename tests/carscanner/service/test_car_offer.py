@@ -6,7 +6,8 @@ from unittest import TestCase
 import pytest
 from allegro_api import ListingOffer
 
-from carscanner.cmd import Context, ENV_LOCAL
+from carscanner.cli import CmdContext
+from carscanner.context import ENV_LOCAL
 from carscanner.dao import CarOffer
 from carscanner.service.car_offer import _update_from_item_info_attributes
 
@@ -24,11 +25,11 @@ class TestWebCarOffer(TestCase):
         carscanner.utils.configure_logging()
         log = logging.getLogger(__name__)
 
-        ctx = Context()
-        ctx.ns = argparse.Namespace
-        ctx.ns.environment = ENV_LOCAL
-        ctx.ns.no_fetch = False
-        ctx.ns.data = pathlib.Path('~/projects/carscanner-data/').expanduser()
+        ns = argparse.Namespace()
+        ns.environment = ENV_LOCAL
+        ns.no_fetch = False
+        ns.data = pathlib.Path('~/projects/carscanner-data/').expanduser()
+        ctx = CmdContext(ns)
 
         ctx.filter_svc().load_filters()
 
