@@ -1,8 +1,36 @@
+from asyncio import Future
+
+import allegro_pl
+from pyramid.request import Request
 from pyramid.response import Response
-from pyramid.view import view_config
+
+from carscanner.web.heroku_context import HerokuContext
 
 
-@view_config(route_name='gather')
-def hello_world(request):
-    print('Incoming request')
-    return Response('<body><h1>Hello World!</h1></body>')
+class DataGatherService:
+    def __init__(self):
+        self._running = False
+
+    def run(self, context, request: Request):
+        if self._running:
+            return Response('<body>Already running</body>', content_type='text/html')
+
+        self._running = True
+
+        ctx = HerokuContext()
+
+        def update():
+            try:
+                ctx.executor().submit(ctx.vehicle_updater().update)
+            except allegro_pl.TokenError as x:
+                print('Invalid token, fetch disabled. Exiting', x.args)
+                raise
+            ctx.close()
+            self._running = False
+
+        f: Future = ctx.executor().submit(update)
+
+        if f.done():
+            return Response('<body>Probably failed</body>', content_type='text/html')
+        else:
+            return Response('<body>Started</body>', content_type='text/html')

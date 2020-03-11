@@ -7,7 +7,7 @@ import pytest
 from allegro_api import ListingOffer
 
 from carscanner.cli import CmdContext
-from carscanner.context import ENV_LOCAL
+from carscanner.cli.cmd_context import ENV_LOCAL
 from carscanner.dao import CarOffer
 from carscanner.service.car_offer import _update_from_item_info_attributes
 

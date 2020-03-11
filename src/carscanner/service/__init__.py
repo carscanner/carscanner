@@ -6,4 +6,5 @@ from .filter import FilterService
 from .make_model import CarMakeModelService, derive_model
 from .migration import MigrationService
 from .offers import OfferService
+from .vehicle_updater import VehicleUpdaterService
 from .voivodships import VoivodeshipService

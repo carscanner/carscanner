@@ -9,7 +9,7 @@ import carscanner.allegro
 import carscanner.dao
 import carscanner.data
 import carscanner.service
-from carscanner.context import ENV_LOCAL, ENV_TRAVIS
+from carscanner.cli.cmd_context import ENV_TRAVIS, ENV_LOCAL
 from carscanner.utils import memoized
 from carscanner.cli import CarListCommand, CriteriaCommand, FilterCommand, OffersCommand, VoivodeshipCommand, CmdContext, \
     TokenCommand

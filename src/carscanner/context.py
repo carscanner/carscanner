@@ -16,9 +16,6 @@ import carscanner.data
 import carscanner.service
 from carscanner.utils import memoized, unix_to_datetime
 
-ENV_TRAVIS = 'travis'
-ENV_LOCAL = 'local'
-
 
 class Context(metaclass=abc.ABCMeta):
     def __init__(self):
@@ -29,18 +26,9 @@ class Context(metaclass=abc.ABCMeta):
     def allegro(self):
         return carscanner.allegro.CarscannerAllegro(self.allegro_client())
 
-    @memoized
+    @abc.abstractmethod
     def allegro_auth(self):
-        ts = carscanner.dao.MongoTrustStore(self.token_collection())
-        if self.environment == ENV_LOCAL:
-            cs = carscanner.allegro.YamlClientCodeStore(carscanner.allegro.codes_path)
-            allow_fetch = not self.ns.no_fetch
-        elif self.environment == ENV_TRAVIS:
-            cs = carscanner.allegro.EnvironClientCodeStore()
-            allow_fetch = False
-        else:
-            raise ValueError(self.environment)
-        return carscanner.allegro.CarScannerCodeAuth(cs, ts, allow_fetch)
+        pass
 
     @memoized
     def allegro_client(self):
@@ -81,11 +69,6 @@ class Context(metaclass=abc.ABCMeta):
     @memoized
     def datetime_now(self) -> datetime.datetime:
         return unix_to_datetime(self.timestamp())
-
-    @property
-    @abc.abstractmethod
-    def environment(self):
-        pass
 
     @memoized
     def executor(self):
@@ -199,6 +182,19 @@ class Context(metaclass=abc.ABCMeta):
 
         data_path = self.data_path / VEHICLE_V3
         return data_path
+
+    @memoized
+    def vehicle_updater(self):
+        return carscanner.service.VehicleUpdaterService(
+            self.offers_svc(),
+            self.metadata_dao(),
+            self.filter_svc(),
+            self.offer_export_svc(),
+            self.datetime_now(),
+            self.data_path,
+            self.file_backup_service(),
+            self.executor(),
+        )
 
     @memoized
     def voivodeship_dao(self):
