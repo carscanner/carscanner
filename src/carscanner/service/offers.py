@@ -47,8 +47,12 @@ class OfferService:
             data = self._allegro.get_listing(**self._search_params(crit, offset))
 
             size = len(data.items.promoted) + len(data.items.regular)
-            logger.info('get_listing: total %d, this run %d, offset %d', data.search_meta.available_count, size,
-                        offset)
+            logger.info('get_listing: cat: %s, total %d, this run %d, offset %d',
+                        crit.category_id,
+                        data.search_meta.available_count,
+                        size,
+                        offset,
+                        )
 
             if data.items.promoted:
                 yield data.items.promoted
