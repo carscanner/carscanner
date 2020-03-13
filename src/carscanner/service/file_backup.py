@@ -36,7 +36,7 @@ class FileBackupService:
 
 
 if __name__ == '__main__':
-    from carscanner.cmd import Context, ENV_LOCAL
+    from carscanner.cli.cmd import Context, ENV_LOCAL
     import argparse
     import pathlib
     import carscanner.utils
