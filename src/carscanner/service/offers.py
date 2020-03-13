@@ -44,11 +44,23 @@ class OfferService:
     def _get_offers_for_criteria(self, crit: Criteria) -> typing.Iterable[typing.List[allegro_api.models.ListingOffer]]:
         offset = 0
         while True:
-            data = self._allegro.get_listing(**self._search_params(crit, offset))
+            try:
+                data = self._allegro.get_listing(**self._search_params(crit, offset))
+            except ValueError as e:
+                logger.warning(e)
+                params = self._search_params(crit, offset)
+                params['_preload_content'] = False
+                raw_data = self._allegro.get_listing(**params)
+                logger.info(raw_data)
+                raise
 
             size = len(data.items.promoted) + len(data.items.regular)
-            logger.info('get_listing: total %d, this run %d, offset %d', data.search_meta.available_count, size,
-                        offset)
+            logger.info('get_listing: cat: %s, total %d, this run %d, offset %d',
+                        crit.category_id,
+                        data.search_meta.available_count,
+                        size,
+                        offset,
+                        )
 
             if data.items.promoted:
                 yield data.items.promoted
