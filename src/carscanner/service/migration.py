@@ -59,17 +59,17 @@ class MigrationService:
 
 
 if __name__ == '__main__':
-    from carscanner.cli.cmd import Context, ENV_LOCAL
+    from carscanner.cli.cmd import CmdContext, ENV_LOCAL
     import argparse
     import pathlib
     import carscanner.utils
 
     carscanner.utils.configure_logging()
 
-    ctx = Context()
-    ctx.ns = argparse.Namespace
-    ctx.ns.environment = ENV_LOCAL
-    ctx.ns.no_fetch = False
-    ctx.ns.data = pathlib.Path('~/projects/carscanner-data/').expanduser()
+    ns = argparse.Namespace
+    ns.environment = ENV_LOCAL
+    ns.no_fetch = False
+    ns.data = pathlib.Path('~/projects/carscanner-data/').expanduser()
+    ctx = CmdContext(ns)
 
     ctx.migration_service().check_migrate()
