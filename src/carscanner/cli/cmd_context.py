@@ -27,6 +27,10 @@ class CmdContext(Context):
             raise ValueError(self.environment)
         return carscanner.allegro.CarScannerCodeAuth(cs, ts, allow_fetch)
 
+    @memoized
+    def backup_service(self):
+        return carscanner.service.FileBackupService(self.car_offer_dao(), self.vehicle_data_path_v3())
+
     @property
     def data_path(self):
         return self._ns.data

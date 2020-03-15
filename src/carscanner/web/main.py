@@ -1,3 +1,4 @@
+import logging
 import os
 
 from pyramid.config import Configurator
@@ -6,8 +7,11 @@ from waitress import serve
 from carscanner.utils import configure_logging
 from carscanner.web.views import index, DataGatherService
 
+log = logging.getLogger(__name__)
+
 if __name__ == '__main__':
     configure_logging()
+    log.info('starting...')
     with Configurator() as config:
         config.include('pyramid_debugtoolbar')
         config.add_route('gather', '/gather')
@@ -17,4 +21,4 @@ if __name__ == '__main__':
         config.add_view(index, route_name='index')
 
         app = config.make_wsgi_app()
-    serve(app, host='0.0.0.0', port=os.environ['PORT'])
+    serve(app, host='0.0.0.0', port=os.environ.get('PORT', '5000'))

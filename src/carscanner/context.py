@@ -1,5 +1,5 @@
 import abc
-import concurrent.futures as futures
+from concurrent import futures
 import datetime
 import pathlib
 import typing
@@ -33,6 +33,10 @@ class Context(metaclass=abc.ABCMeta):
     @memoized
     def allegro_client(self):
         return allegro_pl.Allegro(self.allegro_auth())
+
+    @abc.abstractmethod
+    def backup_service(self):
+        pass
 
     @memoized
     def car_makemodel_dao(self):
@@ -81,10 +85,6 @@ class Context(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def data_path(self) -> pathlib.Path:
         pass
-
-    @memoized
-    def file_backup_service(self):
-        return carscanner.service.FileBackupService(self.car_offer_dao(), self.vehicle_data_path_v3())
 
     @memoized
     def filter_dao(self):
@@ -192,7 +192,7 @@ class Context(metaclass=abc.ABCMeta):
             self.offer_export_svc(),
             self.datetime_now(),
             self.data_path,
-            self.file_backup_service(),
+            self.backup_service(),
             self.executor(),
         )
 

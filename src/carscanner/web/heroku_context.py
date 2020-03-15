@@ -1,8 +1,10 @@
+import os
 import pathlib
 
 import carscanner.allegro
 import carscanner.dao
 from carscanner.context import Context
+from carscanner.service import GitBackupService
 from carscanner.utils import memoized
 
 
@@ -17,7 +19,13 @@ class HerokuContext(Context):
         return carscanner.allegro.CarScannerCodeAuth(cs, ts, False)
 
     @property
-    def data_path(self):
-        import os
-        return pathlib.Path(os.environ['DATA_PATH']).expanduser()
+    def backup_remote(self):
+        return os.environ['BACKUP_REMOTE']
 
+    @memoized
+    def backup_service(self):
+        return GitBackupService(self.car_offer_dao(), self.data_path, self.backup_remote)
+
+    @property
+    def data_path(self):
+        return pathlib.Path(os.environ['DATA_PATH']).expanduser()

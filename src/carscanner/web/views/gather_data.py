@@ -1,3 +1,4 @@
+import logging
 from asyncio import Future
 
 import allegro_pl
@@ -5,6 +6,8 @@ from pyramid.request import Request
 from pyramid.response import Response
 
 from carscanner.web.heroku_context import HerokuContext
+
+log = logging.getLogger(__name__)
 
 
 class DataGatherService:
@@ -20,17 +23,26 @@ class DataGatherService:
         ctx = HerokuContext()
 
         def update():
+            log.info('update called')
             try:
-                ctx.executor().submit(ctx.vehicle_updater().update)
+                ctx.vehicle_updater().update()
             except allegro_pl.TokenError as x:
-                print('Invalid token, fetch disabled. Exiting', x.args)
+                log.error('Invalid token, fetch disabled. Exiting', x.args)
                 raise
-            ctx.close()
-            self._running = False
+            except BaseException as x:
+                log.error("%s",x)
+                raise
+            finally:
+                ctx.close()
+                self._running = False
 
         f: Future = ctx.executor().submit(update)
 
         if f.done():
-            return Response('<body>Probably failed</body>', content_type='text/html')
+            if e := f.exception():
+                return Response('<body>' + str(e) + '</body>', content_type='text/html')
+            else:
+                return Response('<body>finished (?)</body>', content_type='text/html')
+
         else:
             return Response('<body>Started</body>', content_type='text/html')
