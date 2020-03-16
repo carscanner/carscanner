@@ -26,12 +26,10 @@ class DataGatherService:
             log.info('update called')
             try:
                 ctx.vehicle_updater().update()
-            except allegro_pl.TokenError as x:
-                log.error('Invalid token, fetch disabled. Exiting', x.args)
-                raise
-            except BaseException as x:
-                log.error("%s",x)
-                raise
+            except allegro_pl.TokenError:
+                log.error('Invalid token, fetch disabled. Exiting.', exc_info=True)
+            except BaseException:
+                log.error("Error occurred", exc_info=True)
             finally:
                 ctx.close()
                 self._running = False

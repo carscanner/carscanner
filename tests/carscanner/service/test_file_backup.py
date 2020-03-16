@@ -2,17 +2,16 @@ import datetime
 import decimal
 import tempfile
 from pathlib import Path
-from pprint import pprint
-from unittest import TestCase, mock
-from unittest.mock import patch, Mock
-import carscanner.data
+from unittest import TestCase
+from unittest.mock import Mock, patch
+
 from carscanner.dao import CarOffer
 from carscanner.service import FileBackupService
 from carscanner.utils import datetime_to_unix
 
 
 class TestFileBackupService(TestCase):
-    @mock.patch('carscanner.service.file_backup.VehicleShardLoader')
+    @patch('carscanner.service.file_backup.VehicleShardLoader')
     def test_backup(self, vsl_mock):
         car_offer_dao = Mock()
         car_offer_dao.all = Mock(return_value=[])
