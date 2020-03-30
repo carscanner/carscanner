@@ -406,17 +406,11 @@ version = "2.4.6"
 
 [[package]]
 category = "main"
-description = ""
-develop = true
+description = "Injection of dependencies for python 3"
 name = "pytel-inject"
 optional = false
-python-versions = "^3.7"
-version = "0.3"
-
-[package.source]
-reference = ""
-type = "directory"
-url = "../pytel"
+python-versions = ">=3.7,<4.0"
+version = "0.4"
 
 [[package]]
 category = "dev"
@@ -696,7 +690,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "21bd73c451d2240fa0956acfa450285ca518258bd4d0e9569f624f4865fbe308"
+content-hash = "00d094192c30cc31511c9cc33c99a6538f8485726b7b2ec788c470f7c670a47b"
 python-versions = "^3.7"
 
 [metadata.files]
@@ -936,7 +930,10 @@ pyparsing = [
     {file = "pyparsing-2.4.6-py2.py3-none-any.whl", hash = "sha256:c342dccb5250c08d45fd6f8b4a559613ca603b57498511740e65cd11a2e7dcec"},
     {file = "pyparsing-2.4.6.tar.gz", hash = "sha256:4c830582a84fb022400b85429791bc551f1f4871c33f23e44f353119e92f969f"},
 ]
-pytel-inject = []
+pytel-inject = [
+    {file = "pytel-inject-0.4.tar.gz", hash = "sha256:9578dc3dd83dc453f470f896e64ffccd4cfedffc25a1db467488f1a498e894f3"},
+    {file = "pytel_inject-0.4-py3-none-any.whl", hash = "sha256:31fc082757de52ed9adc4f363edcd2958b8376215cd76cbded9e8147a95ae745"},
+]
 pytest = [
     {file = "pytest-5.4.1-py3-none-any.whl", hash = "sha256:0e5b30f5cb04e887b91b1ee519fa3d89049595f428c1db76e73bd7f17b09b172"},
     {file = "pytest-5.4.1.tar.gz", hash = "sha256:84dde37075b8805f3d1f392cc47e38a0e59518fb46a431cfdaf7cf1ce805f970"},
