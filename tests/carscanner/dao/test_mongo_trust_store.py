@@ -1,3 +1,4 @@
+import datetime
 from unittest import TestCase
 
 import mongomock
@@ -27,7 +28,10 @@ class TestMongoTrustStore(TestCase):
         store.save()
 
         raw_token = col.find_one()
-        self.assertEqual(RAW_TOKEN, {k: v for k, v in raw_token.items() if k != '_id'})
+
+        self.assertEqual(store.access_token, raw_token['access_token'])
+        self.assertEqual(store.refresh_token, raw_token['refresh_token'])
+        self.assertIsInstance(raw_token['timestamp'], datetime.datetime)
 
     def _db(self) -> mongomock.Database:
         return mongomock.MongoClient('mongodb://fakehost/mockdb').get_database()

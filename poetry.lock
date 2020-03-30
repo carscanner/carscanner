@@ -287,7 +287,7 @@ description = "Python client for Allegro.pl API"
 name = "mattes-allegro-pl"
 optional = false
 python-versions = ">=3.7,<4.0"
-version = "0.8.0"
+version = "0.9.1"
 
 [package.dependencies]
 allegro-pl-rest-api = ">=2020.1,<2021.0"
@@ -690,7 +690,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "00d094192c30cc31511c9cc33c99a6538f8485726b7b2ec788c470f7c670a47b"
+content-hash = "7691e47af87ab2bb7ac7f05e1fd58a622c5bfdb88267de06a6e0651236a8d6e3"
 python-versions = "^3.7"
 
 [metadata.files]
@@ -837,8 +837,8 @@ lxml = [
     {file = "lxml-4.5.0.tar.gz", hash = "sha256:8620ce80f50d023d414183bf90cc2576c2837b88e00bea3f33ad2630133bbb60"},
 ]
 mattes-allegro-pl = [
-    {file = "mattes-allegro-pl-0.8.0.tar.gz", hash = "sha256:5839d909237b52245091bd28ec88d3d0df1209bd32e4aeb132ba0e922eff304e"},
-    {file = "mattes_allegro_pl-0.8.0-py3-none-any.whl", hash = "sha256:ff4f0b08d25fd2365d706af071b2c72abd310facdf408f75872c46d9fa93c3de"},
+    {file = "mattes-allegro-pl-0.9.1.tar.gz", hash = "sha256:fbc76f00293787d5404aaabf50b05e0e4279b6a6d7ffb0007b521730008ec117"},
+    {file = "mattes_allegro_pl-0.9.1-py3-none-any.whl", hash = "sha256:e950dba25ae3a518d183ca372214d5aedb97f62e15979f1c8d465884d7688d14"},
 ]
 mongomock = [
     {file = "mongomock-3.19.0-py2.py3-none-any.whl", hash = "sha256:8faaffd875732bf55e38e1420a1b7212dde8d446c5852afb4c0884c1369b328b"},
