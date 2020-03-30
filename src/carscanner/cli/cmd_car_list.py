@@ -1,7 +1,5 @@
 import pathlib
 
-from carscanner.cli.cmd_context import CmdContext
-
 
 class CarListCommand:
     @staticmethod
@@ -10,9 +8,9 @@ class CarListCommand:
         carlist_cmd.set_defaults(func=lambda _: carlist_cmd.print_help())
         carlist_subparsers = carlist_cmd.add_subparsers()
 
-        def update(ctx: CmdContext):
+        def update(ctx):
             ctx.modify_static = True
-            ctx.car_makemodel_svc().load_car_list(ctx.ns.input)
+            ctx.car_make_model_svc.load_car_list(ctx.ns.input)
 
         carlist_update_cmd = carlist_subparsers.add_parser('update', help='Load car makes & models from json file to '
                                                                           'the database')
@@ -20,5 +18,5 @@ class CarListCommand:
         carlist_update_cmd.add_argument('--input', '-i', type=pathlib.Path, help='Input json file', metavar='path')
 
         carlist_show_cmd = carlist_subparsers.add_parser('show')
-        carlist_show_cmd.set_defaults(func=lambda ctx: ctx.car_makemodel_svc().show_car_list())
+        carlist_show_cmd.set_defaults(func=lambda ctx: ctx.car_make_model_svc.show_car_list())
 

@@ -2,8 +2,6 @@ import argparse
 import json
 import sys
 
-from carscanner.cli.cmd_context import CmdContext
-
 
 class FilterCommand:
     @staticmethod
@@ -19,7 +17,7 @@ class FilterCommand:
         filter_show_cmd.set_defaults(func=lambda ctx: FilterCommand.get(ctx))
 
     @staticmethod
-    def get(ctx: CmdContext):
+    def get(ctx):
         output_path = ctx.ns.output
         cat_id = ctx.ns.category
 
@@ -32,9 +30,9 @@ class FilterCommand:
             else:
                 output = open(output_path, 'wt')
 
-            cat_ids = [cat_id] if cat_id != 'ALL' else [c.category_id for c in ctx.criteria_dao().all()]
+            cat_ids = [cat_id] if cat_id != 'ALL' else [c.category_id for c in ctx.criteria_dao.all()]
 
-            result = {cat_id: ctx.allegro().get_filters(cat_id) for cat_id in cat_ids}
+            result = {cat_id: ctx.carscanner_allegro.get_filters(cat_id) for cat_id in cat_ids}
             json.dump(result, output, default=to_dict, indent=2)
         finally:
             if output and output is not sys.stdout:

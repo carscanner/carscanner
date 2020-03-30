@@ -1,8 +1,9 @@
-import abc
+import argparse
 import concurrent.futures as futures
+import contextlib
+import dataclasses
 import datetime
 import pathlib
-import typing
 
 import allegro_pl
 import pymongo
@@ -20,190 +21,128 @@ ENV_TRAVIS = 'travis'
 ENV_LOCAL = 'local'
 
 
-class Context(metaclass=abc.ABCMeta):
-    def __init__(self):
-        self._modify_static = False
-        self._closers: typing.List[typing.Callable] = []
+@dataclasses.dataclass
+class Config:
+    allow_fetch = False
+    modify_static = False
 
-    @memoized
-    def allegro(self):
-        return carscanner.allegro.CarscannerAllegro(self.allegro_client())
 
-    @memoized
-    def allegro_auth(self):
-        ts = carscanner.dao.MongoTrustStore(self.token_collection())
-        if self.environment == ENV_LOCAL:
-            cs = carscanner.allegro.YamlClientCodeStore(carscanner.allegro.codes_path)
-            allow_fetch = not self.ns.no_fetch
-        elif self.environment == ENV_TRAVIS:
-            cs = carscanner.allegro.EnvironClientCodeStore()
-            allow_fetch = False
+class Context:
+    def allegro_auth(self,
+                     config: Config,
+                     client_code_store: allegro_pl.ClientCodeStore,
+                     token_store: allegro_pl.oauth.TokenStore
+                     ) -> allegro_pl.oauth.AllegroAuth:
+        return carscanner.allegro.CarScannerCodeAuth(client_code_store, token_store, config.allow_fetch)
+
+    def allegro(self, allegro_auth: allegro_pl.oauth.AllegroAuth) -> allegro_pl.Allegro:
+        return allegro_pl.Allegro(allegro_auth)
+
+    def car_make_model_dao(self, static_data: tinydb.TinyDB) -> carscanner.dao.CarMakeModelDao:
+        return carscanner.dao.CarMakeModelDao(static_data)
+
+    car_makemodel_svc = carscanner.service.CarMakeModelService
+
+    car_offers_builder = carscanner.service.CarOffersBuilder
+
+    def car_offer_dao(self, vehicle_collection_v4: pymongo.collection.Collection) -> carscanner.dao.CarOfferDao:
+        return carscanner.dao.CarOfferDao(vehicle_collection_v4)
+
+    carscanner_allegro = carscanner.allegro.CarscannerAllegro
+
+    categories_svc = carscanner.service.GetCategories
+
+    def client_code_store(self, ns: argparse.Namespace) -> allegro_pl.ClientCodeStore:
+        if ns.environment == ENV_LOCAL:
+            return carscanner.allegro.YamlClientCodeStore(carscanner.allegro.codes_path)
+        elif ns.environment == ENV_TRAVIS:
+            return carscanner.allegro.EnvironClientCodeStore()
         else:
-            raise ValueError(self.environment)
-        return carscanner.allegro.CarScannerCodeAuth(cs, ts, allow_fetch)
+            raise ValueError(ns.environment)
 
-    @memoized
-    def allegro_client(self):
-        return allegro_pl.Allegro(self.allegro_auth())
+    def criteria_dao(self, static_data: tinydb.TinyDB) -> carscanner.dao.CriteriaDao:
+        return carscanner.dao.CriteriaDao(static_data)
 
-    @memoized
-    def car_makemodel_dao(self):
-        return carscanner.dao.CarMakeModelDao(self.static_data())
+    def datetime_now(self, timestamp: int) -> datetime.datetime:
+        return unix_to_datetime(timestamp)
 
-    @memoized
-    def car_makemodel_svc(self):
-        return carscanner.service.CarMakeModelService(self.car_makemodel_dao())
-
-    @memoized
-    def car_offers_builder(self):
-        return carscanner.service.CarOffersBuilder(
-            self.voivodeship_dao(),
-            self.car_makemodel_dao(),
-            self.datetime_now(),
-        )
-
-    @memoized
-    def car_offer_dao(self):
-        return carscanner.dao.CarOfferDao(self.vehicle_collection_v4())
-
-    @memoized
-    def categories_svc(self):
-        return carscanner.service.GetCategories(self.allegro(), self.criteria_dao())
-
-    def close(self):
-        for close in reversed(self._closers):
-            close()
-
-    @memoized
-    def criteria_dao(self):
-        return carscanner.dao.CriteriaDao(self.static_data())
-
-    @memoized
-    def datetime_now(self) -> datetime.datetime:
-        return unix_to_datetime(self.timestamp())
-
-    @property
-    @abc.abstractmethod
-    def environment(self):
-        pass
-
-    @memoized
-    def executor(self):
+    @contextlib.contextmanager
+    def executor(self) -> futures.ThreadPoolExecutor:
         executor = futures.ThreadPoolExecutor()
+        try:
+            yield executor
+        finally:
+            executor.shutdown(True)
 
-        self._closers.append(lambda: executor.shutdown(True))
-        return executor
+    def file_backup_service(self, car_offer_dao: carscanner.dao.CarOfferDao, vehicle_data_path_v3: pathlib.Path) \
+            -> carscanner.service.FileBackupService:
+        return carscanner.service.FileBackupService(car_offer_dao, vehicle_data_path_v3)
 
-    @property
-    @abc.abstractmethod
-    def data_path(self) -> pathlib.Path:
-        pass
+    def filter_dao(self, mem_db: tinydb.TinyDB) -> carscanner.dao.FilterDao:
+        return carscanner.dao.FilterDao(mem_db)
 
-    @memoized
-    def file_backup_service(self):
-        return carscanner.service.FileBackupService(self.car_offer_dao(), self.vehicle_data_path_v3())
+    filter_svc = carscanner.service.FilterService
 
-    @memoized
-    def filter_dao(self):
-        return carscanner.dao.FilterDao(self.mem_db())
-
-    @memoized
-    def filter_svc(self):
-        return carscanner.service.FilterService(
-            self.allegro(),
-            self.filter_dao(),
-            self.criteria_dao())
-
-    @memoized
-    def mem_db(self):
+    @contextlib.contextmanager
+    def mem_db(self) -> tinydb.TinyDB:
         db = tinydb.TinyDB(storage=tinydb.storages.MemoryStorage)
-        self._closers.append(db.close)
-        return db
+        try:
+            yield db
+        finally:
+            db.close()
 
-    @memoized
-    def meta_col(self):
+    def meta_col(self, mongodb_carscanner_db: pymongo.database.Database) -> pymongo.collection.Collection:
         from carscanner.dao.meta import META_V2
-        db = self.mongodb_carscanner_db()
-        return db.get_collection(META_V2, codec_options=db.codec_options)
+        return mongodb_carscanner_db.get_collection(META_V2, codec_options=mongodb_carscanner_db.codec_options)
 
-    @memoized
-    def metadata_dao(self):
-        return carscanner.dao.MetadataDao(self.meta_col())
+    metadata_dao = carscanner.dao.MetadataDao
 
-    @memoized
-    def migration_service(self):
+    def migration_service(self, mongodb_carscanner_db: pymongo.database.Database) \
+            -> carscanner.service.migration.MigrationService:
         return carscanner.service.migration.MigrationService(
-            self.mongodb_carscanner_db(),
+            mongodb_carscanner_db,
         )
 
-    @property
-    def modify_static(self):
-        return self._modify_static
+    def mongodb_carscanner_db(self, mongodb_connection: pymongo.MongoClient) -> pymongo.database.Database:
+        return mongodb_connection.get_database(codec_options=mongodb_connection.codec_options)
 
-    @modify_static.setter
-    def modify_static(self, value: bool) -> None:
-        self._modify_static = value
-
-    @memoized
-    def mongodb_carscanner_db(self) -> pymongo.database.Database:
-        conn = self.mongodb_connection()
-        return conn.get_database(codec_options=conn.codec_options)
-
-    @memoized
     def mongodb_connection(self) -> pymongo.MongoClient:
         import os
         return pymongo.MongoClient(os.environ.get('MONGODB_URI', 'mongodb://localhost/carscanner'), retryWrites=False)
 
-    @memoized
-    def offer_export_svc(self):
-        return carscanner.service.ExportService(self.car_offer_dao(), self.metadata_dao())
+    offer_export_svc = carscanner.service.ExportService
 
-    @memoized
-    def offers_svc(self):
-        return carscanner.service.OfferService(
-            self.allegro(),
-            self.criteria_dao(),
-            self.car_offers_builder(),
-            self.car_offer_dao(),
-            self.filter_svc(),
-            self.datetime_now(),
-        )
+    offers_svc = carscanner.service.OfferService
 
-    @memoized
-    def static_data(self) -> tinydb.TinyDB:
+    @contextlib.contextmanager
+    def static_data(self, config: Config) -> tinydb.TinyDB:
         import carscanner.dao.resources
         storage = carscanner.data.ResourceStorage
-        storage = storage if self.modify_static else carscanner.data.ReadOnlyMiddleware(storage)
+        storage = storage if config.modify_static else carscanner.data.ReadOnlyMiddleware(storage)
         db = tinydb.TinyDB(storage=storage, package=carscanner.dao.resources, resource='static.json', indent=2)
-        self._closers.append(db.close)
-        return db
+        try:
+            yield db
+        finally:
+            db.close()
 
-    @memoized
-    def timestamp(self):
+    def timestamp(self) -> int:
         return carscanner.utils.now()
 
-    @memoized
-    def token_collection(self):
-        db = self.mongodb_carscanner_db()
-        return db.get_collection('token', codec_options=db.codec_options)
+    def token_col(self, mongodb_carscanner_db: pymongo.database.Database) -> pymongo.collection.Collection:
+        return mongodb_carscanner_db.get_collection('token', codec_options=mongodb_carscanner_db.codec_options)
 
-    @memoized
-    def vehicle_collection_v4(self):
+    token_store = carscanner.dao.MongoTrustStore
+
+    def vehicle_collection_v4(self, mongodb_carscanner_db: pymongo.database.Database) -> pymongo.collection.Collection:
         from carscanner.dao.car_offer import VEHICLE_V3
-        db = self.mongodb_carscanner_db()
-        return db.get_collection(VEHICLE_V3, codec_options=db.codec_options)
+        return mongodb_carscanner_db.get_collection(VEHICLE_V3, codec_options=mongodb_carscanner_db.codec_options)
 
-    @memoized
-    def vehicle_data_path_v3(self) -> pathlib.Path:
+    def vehicle_data_path_v3(self, ns: argparse.Namespace) -> pathlib.Path:
         from carscanner.dao.car_offer import VEHICLE_V3
 
-        data_path = self.data_path / VEHICLE_V3
-        return data_path
+        return ns.data / VEHICLE_V3
 
-    @memoized
-    def voivodeship_dao(self):
-        return carscanner.dao.VoivodeshipDao(self.static_data())
+    def voivodeship_dao(self, static_data: tinydb.TinyDB) -> carscanner.dao.VoivodeshipDao:
+        return carscanner.dao.VoivodeshipDao(static_data)
 
-    @memoized
-    def voivodeship_svc(self):
-        return carscanner.service.VoivodeshipService(self.allegro(), self.voivodeship_dao())
+    voivodeship_svc = carscanner.service.VoivodeshipService

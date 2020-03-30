@@ -1,5 +1,4 @@
 from .cmd_car_list import CarListCommand
-from .cmd_context import CmdContext
 from .cmd_criteria import CriteriaCommand
 from .cmd_filter import FilterCommand
 from .cmd_offers import OffersCommand

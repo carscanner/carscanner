@@ -57,19 +57,3 @@ class MigrationService:
     def _vehicle_col(self):
         return self._db_v4.get_collection(_VEHICLE_V3, codec_options=self._db_v4.codec_options)
 
-
-if __name__ == '__main__':
-    from carscanner.cli.cmd import Context, ENV_LOCAL
-    import argparse
-    import pathlib
-    import carscanner.utils
-
-    carscanner.utils.configure_logging()
-
-    ctx = Context()
-    ctx.ns = argparse.Namespace
-    ctx.ns.environment = ENV_LOCAL
-    ctx.ns.no_fetch = False
-    ctx.ns.data = pathlib.Path('~/projects/carscanner-data/').expanduser()
-
-    ctx.migration_service().check_migrate()

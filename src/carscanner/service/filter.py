@@ -11,10 +11,10 @@ crit = Criteria('4029', 'Osobowe')
 
 
 class FilterService:
-    def __init__(self, allegro: CarscannerAllegro, filter_dao: FilterDao, crit_dao: CriteriaDao):
-        self._allegro = allegro
+    def __init__(self, carscanner_allegro: CarscannerAllegro, filter_dao: FilterDao, criteria_dao: CriteriaDao):
+        self._allegro = carscanner_allegro
         self._filter_dao = filter_dao
-        self._crit_dao = crit_dao
+        self._crit_dao = criteria_dao
 
     def load_filters(self):
         log.debug("Get filters for %s", crit.category_name)

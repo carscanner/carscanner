@@ -29,8 +29,8 @@ class Metadata:
 
 
 class MetadataDao:
-    def __init__(self, col: pymongo.collection.Collection):
-        self._col = col
+    def __init__(self, meta_col: pymongo.collection.Collection):
+        self._col = meta_col
         self._meta: typing.Optional[Metadata] = None
 
         raw_meta = self._col.find_one({})

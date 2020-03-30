@@ -33,20 +33,3 @@ class FileBackupService:
             result[_K_LAST_SPOTTED] = datetime_to_unix(obj.last_spotted)
 
         return result
-
-
-if __name__ == '__main__':
-    from carscanner.cli.cmd import Context, ENV_LOCAL
-    import argparse
-    import pathlib
-    import carscanner.utils
-
-    carscanner.utils.configure_logging()
-
-    ctx = Context()
-    ctx.ns = argparse.Namespace
-    ctx.ns.environment = ENV_LOCAL
-    ctx.ns.no_fetch = False
-    ctx.ns.data = pathlib.Path('~/projects/carscanner-data/').expanduser()
-
-    ctx.file_backup_service().backup()

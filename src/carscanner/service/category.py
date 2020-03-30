@@ -14,9 +14,9 @@ skip = ['Pozostałe']
 
 
 class GetCategories:
-    def __init__(self, allegro: CarscannerAllegro, dao: CriteriaDao):
-        self._dao = dao
-        self._allegro = allegro
+    def __init__(self, carscanner_allegro: CarscannerAllegro, criteria_dao: CriteriaDao):
+        self._dao = criteria_dao
+        self._allegro = carscanner_allegro
 
     @staticmethod
     def keep_digging(stack: list):

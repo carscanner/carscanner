@@ -10,6 +10,7 @@ CherryPy = "^18.1"
 importlib_resources = "^1.0.2"
 mattes-allegro-pl = '^0.8.0'
 pymongo = "^3.10.1"
+pytel-inject = "0.4"
 python = "^3.7"
 PyYAML = "^5.1"
 tinydb = "^3.13"
