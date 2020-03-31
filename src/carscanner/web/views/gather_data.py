@@ -22,25 +22,27 @@ class DataGatherService:
 
         self._running = True
 
-        with pytel.Pytel([Context(), HerokuContext(), {'config': Config()}]) as ctx:
-            def update():
-                log.info('update called')
-                try:
-                    ctx.vehicle_updater_svc.update()
-                except allegro_pl.TokenError:
-                    log.error('Invalid token, fetch disabled. Exiting.', exc_info=True)
-                except BaseException:
-                    log.error("Error occurred", exc_info=True)
-                finally:
-                    self._running = False
+        ctx = pytel.Pytel([Context(), HerokuContext(), {'config': Config()}])
 
-            f: Future = ctx.executor.submit(update)
+        def update():
+            log.info('update called')
+            try:
+                ctx.vehicle_updater_svc.update()
+            except allegro_pl.TokenError:
+                log.error('Invalid token, fetch disabled. Exiting.', exc_info=True)
+            except BaseException:
+                log.error("Error occurred", exc_info=True)
+            finally:
+                self._running = False
+                ctx.close()
 
-            if f.done():
-                if e := f.exception():
-                    return Response('<body>' + str(e) + '</body>', content_type='text/html')
-                else:
-                    return Response('<body>finished (?)</body>', content_type='text/html')
+        f: Future = ctx.executor.submit(update)
 
+        if f.done():
+            if e := f.exception():
+                return Response('<body>' + str(e) + '</body>', content_type='text/html')
             else:
-                return Response('<body>Started</body>', content_type='text/html')
+                return Response('<body>finished (?)</body>', content_type='text/html')
+
+        else:
+            return Response('<body>Started</body>', content_type='text/html')
