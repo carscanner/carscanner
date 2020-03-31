@@ -39,6 +39,7 @@ def build_parser():
 
 
 def main():
+    carscanner.utils.configure_logging()
     ns = build_parser().parse_args()
     if ns.data:
         ns.data = ns.data.expanduser()
@@ -65,5 +66,4 @@ def main():
 
 
 if __name__ == '__main__':
-    carscanner.utils.configure_logging()
     main()
