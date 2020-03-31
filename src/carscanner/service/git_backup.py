@@ -46,9 +46,6 @@ def do_git_clone(uri: str, data_path: pathlib.Path, log_q: mp.Queue) -> None:
 
 
 def git_clone(uri: str, data_path: pathlib.Path, log_q: mp.Queue) -> typing.Optional[mp.Process]:
-    if data_path.exists():
-        return None
-
     p = mp.Process(target=do_git_clone, args=(uri, data_path, log_q,))
     p.start()
     return p
@@ -69,6 +66,7 @@ def do_commit_push(repo_dir: pathlib.Path, log_q: mp.Queue) -> None:
 
             log_q.put_nowait('Pushing backup repo')
             r.remote('origin').push()
+            log_q.put_nowait('Push done')
     except BaseException as e:
         log_q.put(str(e))
 
@@ -80,17 +78,23 @@ def commit_push(repo_dir: pathlib.Path, log_q: mp.Queue) -> mp.Process:
 
 
 class GitBackupService(BackupService):
-    def __init__(self, car_offer_dao: CarOfferDao, data_path: pathlib.Path, uri: str):
+    def __init__(self, car_offer_dao: CarOfferDao, data_path: pathlib.Path, vehicle_data_path: pathlib.Path, uri: str):
         self._dao = car_offer_dao
         self._data_path = data_path
+        self._vehicle_data_path = vehicle_data_path
         self._uri = uri
+
+        self.log_q = None
+        self.log_t = None
+        self.clone_p = None
+
+    def backup(self):
+        log.info('Preparing backup')
 
         self.log_q = mp.Queue()
         self.log_t = spawn_logging_thread('carscanner.__git__', self.log_q)
         self.clone_p = git_clone(self._uri, self._data_path, self.log_q)
 
-    def backup(self):
-        log.info('Preparing backup')
         with tinydb.TinyDB(storage=tinydb.storages.MemoryStorage) as db:
             tbl: tinydb.database.Table = db.table(_VEHICLE_V3)
             tbl.insert_multiple(BackupService._convert(obj) for obj in self._dao.all())
@@ -98,8 +102,9 @@ class GitBackupService(BackupService):
             if self.clone_p:
                 self.clone_p.join()
 
-            VehicleShardLoader(tbl, self._data_path).close()
+            VehicleShardLoader(tbl, self._vehicle_data_path).close()
 
         commit_push(self._data_path, self.log_q).join()
         self.log_q.put(StopIteration)
         self.log_t.join()
+        log.info('Backup done')
