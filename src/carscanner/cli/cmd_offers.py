@@ -6,7 +6,11 @@ class OffersCommand:
         offers_subparsers = offers_parser.add_subparsers()
 
         offers_update_opt = offers_subparsers.add_parser('update', help='Update and export current offers')
-        offers_update_opt.set_defaults(func=lambda ctx: ctx.vehicle_updatóer().update())
+        offers_update_opt.set_defaults(func=lambda ctx: ctx.offers_cmd.update())
 
         offers_export_opt = offers_subparsers.add_parser('export')
-        offers_export_opt.set_defaults(func=lambda ctx: ctx.offer_export_svc().export(ctx.data_path / 'export.json'))
+        offers_export_opt.set_defaults(func=lambda ctx: ctx.offer_export_svc.export(ctx.ns.data / ctx.ns.output))
+
+        offers_backup_opt = offers_subparsers.add_parser('backup')
+        offers_backup_opt.set_defaults(func=lambda ctx: ctx.file_backup_service.backup())
+

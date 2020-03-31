@@ -3,16 +3,13 @@ import logging
 import pathlib
 
 import allegro_pl
+import pytel
 
 import carscanner
-import carscanner.allegro
-import carscanner.dao
-import carscanner.data
-import carscanner.service
-from carscanner.cli.cmd_context import ENV_TRAVIS, ENV_LOCAL
-from carscanner.utils import memoized
-from carscanner.cli import CarListCommand, CriteriaCommand, FilterCommand, OffersCommand, VoivodeshipCommand, CmdContext, \
+import carscanner.utils
+from carscanner.cli import CarListCommand, CriteriaCommand, FilterCommand, OffersCommand, VoivodeshipCommand, \
     TokenCommand
+from carscanner.context import ENV_LOCAL, ENV_TRAVIS, Context, Config
 
 log = logging.getLogger(__name__)
 
@@ -41,28 +38,31 @@ def build_parser():
     return parser
 
 
-def start():
-    parser = build_parser()
-
-    ns = parser.parse_args()
-    context = CmdContext(ns)
-
-    log.info("Starting")
-
-    context.migration_service().check_migrate()
-
-    try:
-        ns.func(context)
-    except allegro_pl.TokenError as x:
-        print('Invalid token, fetch disabled. Exiting', x.args)
-        raise
-    else:
-        context.close()
-
-
 def main():
     carscanner.utils.configure_logging()
-    start()
+    ns = build_parser().parse_args()
+    if ns.data:
+        ns.data = ns.data.expanduser()
+    log.info("Starting")
+
+    config = Config()
+    config.allow_fetch = ns.environment == ENV_LOCAL
+
+    with pytel.Pytel([
+        Context(), {
+            'config': config,
+            'ns': ns,
+            'offers_cmd': OffersCommand,
+        }
+    ]) as context:
+
+        context.migration_service.check_migrate()
+
+        try:
+            ns.func(context)
+        except allegro_pl.TokenError as x:
+            print('Invalid token, fetch disabled. Exiting', x.args)
+            raise
 
 
 if __name__ == '__main__':

@@ -6,8 +6,8 @@ class VoivodeshipCommand:
         vs_subparsers = vs_parser.add_subparsers()
 
         def load(ctx):
-            ctx.modify_static = True
-            ctx.voivodeship_svc().load_voivodeships()
+            ctx.config.modify_static = True
+            ctx.voivodeship_svc.load_voivodeships()
 
         vs_load_cmd = vs_subparsers.add_parser('load')
         vs_load_cmd.set_defaults(func=load)

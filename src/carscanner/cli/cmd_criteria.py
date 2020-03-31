@@ -7,7 +7,7 @@ class CriteriaCommand:
 
         def build(ctx):
             ctx.modify_static = True
-            ctx.categories_svc().build_criteria()
+            ctx.categories_svc.build_criteria()
 
         criteria_build_opt = criteria_subparsers.add_parser('build', help='Build criteria database')
         criteria_build_opt.set_defaults(func=build)

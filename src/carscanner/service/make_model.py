@@ -26,8 +26,8 @@ def derive_model(car_make_model: CarMakeModelDao, make: str, name: str, descript
 
 
 class CarMakeModelService:
-    def __init__(self, dao: CarMakeModelDao):
-        self._dao = dao
+    def __init__(self, car_make_model_dao: CarMakeModelDao):
+        self._dao = car_make_model_dao
 
     def load_car_list(self, path: str):
         with open(path, 'rt') as f:

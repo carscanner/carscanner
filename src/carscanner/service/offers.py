@@ -7,10 +7,9 @@ import zeep
 import zeep.exceptions
 
 from carscanner.allegro import CarscannerAllegro
-from carscanner.dao import CarOfferDao, Criteria
+from carscanner.dao import CarOfferDao, Criteria, CriteriaDao
 from carscanner.utils import chunks
-from .car_offer import CarOffersBuilder
-from .filter import FilterService
+from . import CarOffersBuilder, FilterService
 
 logger = logging.getLogger(__name__)
 
@@ -27,19 +26,20 @@ class OfferService:
     }
 
     def __init__(
-            self, allegro: CarscannerAllegro,
-            criteria_dao,
+            self,
+            carscanner_allegro: CarscannerAllegro,
+            criteria_dao: CriteriaDao,
             car_offers_builder: CarOffersBuilder,
-            car_offer_dao,
-            filter_service,
-            ts: datetime.datetime,
+            car_offer_dao: CarOfferDao,
+            filter_svc: FilterService,
+            datetime_now: datetime.datetime,
     ):
-        self._allegro = allegro
+        self._allegro = carscanner_allegro
         self.criteria_dao = criteria_dao
         self.car_offers_builder = car_offers_builder
-        self.car_offer_dao: CarOfferDao = car_offer_dao
-        self.filter_service: FilterService = filter_service
-        self.timestamp: datetime.datetime = ts
+        self.car_offer_dao = car_offer_dao
+        self.filter_service = filter_svc
+        self.timestamp = datetime_now
 
     def _get_offers_for_criteria(self, crit: Criteria) -> typing.Iterable[typing.List[allegro_api.models.ListingOffer]]:
         offset = 0

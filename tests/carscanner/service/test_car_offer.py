@@ -3,11 +3,12 @@ import logging
 from pprint import pprint
 from unittest import TestCase
 
+import pytel
 import pytest
 from allegro_api import ListingOffer
 
-from carscanner.cli import CmdContext
-from carscanner.cli.cmd_context import ENV_LOCAL
+from carscanner.cli import OffersCommand
+from carscanner.context import ENV_LOCAL, Context, Config
 from carscanner.dao import CarOffer
 from carscanner.service.car_offer import _update_from_item_info_attributes
 
@@ -27,33 +28,40 @@ class TestWebCarOffer(TestCase):
 
         ns = argparse.Namespace()
         ns.environment = ENV_LOCAL
-        ns.no_fetch = False
         ns.data = pathlib.Path('~/projects/carscanner-data/').expanduser()
-        ctx = CmdContext(ns)
 
-        ctx.filter_svc().load_filters()
+        config = Config()
+        config.allow_fetch=True
 
-        crit = [crit for crit in ctx.criteria_dao().all() if crit.category_name.lower() == 'bmw'][0]
+        with pytel.Pytel([
+            Context(), {
+                'config': config,
+                'ns': ns,
+                'offers_cmd': OffersCommand,
+            }
+        ]) as ctx:
+            ctx.filter_svc.load_filters()
 
-        allegro = ctx.allegro()
-        offers_svc = ctx.offers_svc()
-        params = offers_svc._search_params(crit, 0)
-        pprint(params)
-        params['limit'] = allegro.get_listing.limit_min
-        params['category_id'] = crit.category_id
+            crit = [crit for crit in ctx.criteria_dao.all() if crit.category_name.lower() == 'bmw'][0]
 
-        listing_offer: ListingOffer = allegro.get_listing(**params).items.promoted[0]
+            allegro = ctx.carscanner_allegro
+            offers_svc = ctx.offers_svc
+            params = offers_svc._search_params(crit, 0)
+            pprint(params)
+            params['limit'] = allegro.get_listing.limit_min
+            params['category_id'] = crit.category_id
 
-        ctx.allegro_client().soap_service().login_with_access_token()
+            listing_offer: ListingOffer = allegro.get_listing(**params).items.promoted[0]
 
-        log.info("get_items_info(%s)", listing_offer.id)
-        items_info_result = offers_svc._do_get_items_info([listing_offer.id])
-        car_item_info = items_info_result[0]
+            ctx.allegro.soap_service().login_with_access_token()
 
-        ts = datetime.datetime.utcnow()
-        car_offer = CarOffer(ts)
-        attribs = {a.attribName: a.attribValues.item for a in car_item_info.itemAttribs.item}
-        _update_from_item_info_attributes(car_offer, attribs)
+            log.info("get_items_info(%s)", listing_offer.id)
+            items_info_result = offers_svc._do_get_items_info([listing_offer.id])
+            car_item_info = items_info_result[0]
 
-        pprint(car_offer)
+            ts = datetime.datetime.utcnow()
+            car_offer = CarOffer(ts)
+            attribs = {a.attribName: a.attribValues.item for a in car_item_info.itemAttribs.item}
+            _update_from_item_info_attributes(car_offer, attribs)
 
+            pprint(car_offer)

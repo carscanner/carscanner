@@ -20,10 +20,11 @@ _KEY_COUNTRY_ORIGIN = "Kraj pochodzenia"
 
 
 class CarOffersBuilder:
-    def __init__(self, voivodeship_dao: VoivodeshipDao, car_make_model: CarMakeModelDao, ts: datetime.datetime):
+    def __init__(self, voivodeship_dao: VoivodeshipDao, car_make_model_dao: CarMakeModelDao,
+                 datetime_now: datetime.datetime):
         self._voivodeship_dao = voivodeship_dao
-        self._car_make_model = car_make_model
-        self.ts = ts
+        self._car_make_model = car_make_model_dao
+        self.ts = datetime_now
 
     def new_car_offer(self):
         return CarOffer(first_spotted=self.ts)
