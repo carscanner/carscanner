@@ -6,9 +6,11 @@ import allegro_pl
 import pytel
 
 import carscanner
+import carscanner.allegro
+import carscanner.service
 import carscanner.utils
 from carscanner.cli import CarListCommand, CriteriaCommand, FilterCommand, OffersCommand, VoivodeshipCommand, \
-    TokenCommand
+    TokenCommand, CmdContext
 from carscanner.context import ENV_LOCAL, ENV_TRAVIS, Context, Config
 
 log = logging.getLogger(__name__)
@@ -40,20 +42,18 @@ def build_parser():
 
 def main():
     carscanner.utils.configure_logging()
-    ns = build_parser().parse_args()
-    if ns.data:
-        ns.data = ns.data.expanduser()
     log.info("Starting")
 
+    ns = build_parser().parse_args()
     config = Config()
     config.allow_fetch = ns.environment == ENV_LOCAL
 
     with pytel.Pytel([
-        Context(), {
+        Context(),
+        CmdContext(ns),
+        {
             'config': config,
-            'ns': ns,
-            'offers_cmd': OffersCommand,
-        }
+        },
     ]) as context:
 
         context.migration_service.check_migrate()

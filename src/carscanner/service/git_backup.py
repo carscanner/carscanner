@@ -80,8 +80,8 @@ def commit_push(repo_dir: pathlib.Path, log_q: mp.Queue) -> mp.Process:
 
 
 class GitBackupService(BackupService):
-    def __init__(self, dao: CarOfferDao, data_path: pathlib.Path, uri: str):
-        self._dao = dao
+    def __init__(self, car_offer_dao: CarOfferDao, data_path: pathlib.Path, uri: str):
+        self._dao = car_offer_dao
         self._data_path = data_path
         self._uri = uri
 

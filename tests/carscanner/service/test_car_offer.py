@@ -7,7 +7,7 @@ import pytel
 import pytest
 from allegro_api import ListingOffer
 
-from carscanner.cli import OffersCommand
+from carscanner.cli.cmd import CmdContext
 from carscanner.context import ENV_LOCAL, Context, Config
 from carscanner.dao import CarOffer
 from carscanner.service.car_offer import _update_from_item_info_attributes
@@ -20,24 +20,24 @@ class TestWebCarOffer(TestCase):
         # zeep doesn't seem test friendly, had problem with creating value objects manually
 
         import argparse
-        import pathlib
         import carscanner.utils
 
         carscanner.utils.configure_logging()
         log = logging.getLogger(__name__)
 
-        ns = argparse.Namespace()
-        ns.environment = ENV_LOCAL
-        ns.data = pathlib.Path('~/projects/carscanner-data/').expanduser()
+        ns = argparse.Namespace(
+            environment=ENV_LOCAL,
+            data='~/projects/carscanner-data/',
+        )
 
         config = Config()
-        config.allow_fetch=True
+        config.allow_fetch = True
 
         with pytel.Pytel([
-            Context(), {
+            Context(),
+            CmdContext(ns),
+            {
                 'config': config,
-                'ns': ns,
-                'offers_cmd': OffersCommand,
             }
         ]) as ctx:
             ctx.filter_svc.load_filters()

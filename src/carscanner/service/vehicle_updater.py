@@ -2,30 +2,31 @@ import datetime
 import pathlib
 from concurrent import futures
 
-import carscanner.dao
-from . import FilterService, ExportService, FileBackupService, OfferService
+from . import BackupService, ExportService, FilterService, OfferService
+from ..dao import MetadataDao
 
 
 class VehicleUpdaterService:
     def __init__(self,
-                 offer_svc:OfferService,
-                 meta_dao: carscanner.dao.MetadataDao,
+                 offers_svc: OfferService,
+                 metadata_dao: MetadataDao,
                  filter_svc: FilterService,
-                 export_svc: ExportService,
-                 ts: datetime.datetime,
-                 data_path: pathlib.Path,
-                 backup_svc: FileBackupService,
+                 offer_export_svc: ExportService,
+                 datetime_now: datetime.datetime,
+                 backup_svc: BackupService,
                  executor: futures.Executor,
+                 data_path: pathlib.Path,
+                 export_path: pathlib.Path,
                  ):
-        self.ts = ts
+        self.ts = datetime_now
         self._filter_svc = filter_svc
-        self._meta_dao = meta_dao
-        self._offer_svc = offer_svc
-        self._export_svc = export_svc
+        self._meta_dao = metadata_dao
+        self._offer_svc = offers_svc
+        self._export_svc = offer_export_svc
         self._data_path = data_path
         self._backup_service = backup_svc
         self._executor = executor
-        self._output_path = data_path / 'export.json'
+        self._output_path = export_path
 
     def update(self):
         self._meta_dao.report()

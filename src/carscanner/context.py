@@ -1,9 +1,8 @@
-import argparse
-from concurrent import futures
 import contextlib
 import dataclasses
 import datetime
 import pathlib
+from concurrent import futures
 
 import allegro_pl
 import pymongo
@@ -51,14 +50,6 @@ class Context:
     carscanner_allegro = carscanner.allegro.CarscannerAllegro
 
     categories_svc = carscanner.service.GetCategories
-
-    def client_code_store(self, ns: argparse.Namespace) -> allegro_pl.ClientCodeStore:
-        if ns.environment == ENV_LOCAL:
-            return carscanner.allegro.YamlClientCodeStore(carscanner.allegro.codes_path)
-        elif ns.environment == ENV_TRAVIS:
-            return carscanner.allegro.EnvironClientCodeStore()
-        else:
-            raise ValueError(ns.environment)
 
     def criteria_dao(self, static_data: tinydb.TinyDB) -> carscanner.dao.CriteriaDao:
         return carscanner.dao.CriteriaDao(static_data)
@@ -133,10 +124,10 @@ class Context:
         from carscanner.dao.car_offer import VEHICLE_V3
         return mongodb_carscanner_db.get_collection(VEHICLE_V3, codec_options=mongodb_carscanner_db.codec_options)
 
-    def vehicle_data_path_v3(self, ns: argparse.Namespace) -> pathlib.Path:
+    def vehicle_data_path_v3(self, data_path: pathlib.Path) -> pathlib.Path:
         from carscanner.dao.car_offer import VEHICLE_V3
 
-        return ns.data / VEHICLE_V3
+        return data_path / VEHICLE_V3
 
     vehicle_updater_svc = carscanner.service.VehicleUpdaterService
 
