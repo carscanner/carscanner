@@ -2,7 +2,6 @@ import os
 import pathlib
 
 import carscanner.allegro
-import carscanner.dao
 import carscanner.service
 
 
@@ -11,14 +10,7 @@ class HerokuContext:
         self.backup_remote = os.environ['BACKUP_REMOTE']
         self.data_path = pathlib.Path(os.environ['DATA_PATH']).expanduser()
 
-    def backup_svc(
-            self,
-            car_offer_dao: carscanner.dao.CarOfferDao,
-            data_path: pathlib.Path,
-            vehicle_data_path_v3: pathlib.Path,
-            backup_remote: str
-    ) -> carscanner.service.GitBackupService:
-        return carscanner.service.GitBackupService(car_offer_dao, data_path, vehicle_data_path_v3, backup_remote)
+    backup_svc = carscanner.service.GitBackupService
 
     client_code_store = carscanner.allegro.EnvironClientCodeStore
 

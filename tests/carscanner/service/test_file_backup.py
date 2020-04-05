@@ -15,9 +15,11 @@ class TestFileBackupService(TestCase):
     def test_backup(self, vsl_mock):
         car_offer_dao = Mock()
         car_offer_dao.all = Mock(return_value=[])
+        export_path = Mock()
+        export_svc = Mock()
         with tempfile.TemporaryDirectory() as tmpdir:
             temp = Path(tmpdir)
-            svc = FileBackupService(car_offer_dao, temp)
+            svc = FileBackupService(car_offer_dao, export_path, export_svc, temp)
             svc.backup()
 
         vsl_mock.assert_called_once()
@@ -26,9 +28,11 @@ class TestFileBackupService(TestCase):
     def test__convert(self):
         car_offer_dao = Mock()
         car_offer_dao.all = Mock(return_value=[])
+        export_path = Mock()
+        export_svc = Mock()
         with tempfile.TemporaryDirectory() as tmpdir:
             temp = Path(tmpdir)
-            svc = FileBackupService(car_offer_dao, temp)
+            svc = FileBackupService(car_offer_dao, export_path, export_svc, temp)
             ts = datetime.datetime.utcnow()
             d = svc._convert(CarOffer(ts, price=decimal.Decimal('1')))
 

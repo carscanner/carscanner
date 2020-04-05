@@ -21,8 +21,7 @@ class CmdContext:
         else:
             raise ValueError(self._ns.environment)
 
-    def backup_svc(self, car_offer_dao: CarOfferDao, vehicle_data_path_v3: Path) -> FileBackupService:
-        return FileBackupService(car_offer_dao, vehicle_data_path_v3)
+    backup_svc = FileBackupService
 
     def data_path(self) -> Path:
         return Path(self._ns.output).expanduser()

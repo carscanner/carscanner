@@ -16,10 +16,13 @@ class TestGitBackupService(TestCase):
     def test_backup(self, repo_mock):
         dao = Mock()
         dao.all = Mock(return_value=[])
+        export_svc = Mock()
 
         with tempfile.TemporaryDirectory() as tmpDir:
             data_path = Path(tmpDir)
-            GitBackupService(dao, data_path, 'remote_repo_uri').backup()
+            export_path = data_path
+            GitBackupService(dao, data_path, export_path, export_svc, 'remote_repo_uri',
+                             export_path / 'vehicle').backup()
 
     @patch('git.Repo')
     def test_do_git_clone_pull(self, repo_mock):
