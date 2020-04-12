@@ -1,12 +1,11 @@
-import dataclasses
 import datetime
 import decimal
+import logging
 import typing
 
+import attr
 import bson
 import pymongo
-
-import logging
 
 log = logging.getLogger(__name__)
 
@@ -19,28 +18,28 @@ _K_PRICE = 'price'
 VEHICLE_V3 = 'vehicle'
 
 
-@dataclasses.dataclass
+@attr.s(slots=True, auto_attribs=True)
 class CarOffer:
-    first_spotted: datetime.datetime
+    first_spotted: datetime.datetime = attr.ib()
 
-    active: bool = True
-    fuel: str = None
-    id: int = None
-    image: str = None
-    imported: bool = None
-    last_spotted: datetime.datetime = None
-    location: str = None
-    make: str = None
-    mileage: int = None
-    model: str = None
-    name: str = None
-    price: decimal.Decimal = None
-    url: str = None
-    voivodeship: str = None
-    year: int = None
+    active: bool = attr.ib(default=True)
+    fuel: str = attr.ib(default=None)
+    id: int = attr.ib(default=None)
+    image: str = attr.ib(default=None)
+    imported: bool = attr.ib(default=None)
+    last_spotted: datetime.datetime = attr.ib(default=None)
+    location: str = attr.ib(default=None)
+    make: str = attr.ib(default=None)
+    mileage: int = attr.ib(default=None)
+    model: str = attr.ib(default=None)
+    name: str = attr.ib(default=None)
+    price: decimal.Decimal = attr.ib(default=None)
+    url: str = attr.ib(default=None)
+    voivodeship: str = attr.ib(default=None)
+    year: int = attr.ib(default=None)
 
     def to_dict(self):
-        result = self.__dict__.copy()
+        result = attr.asdict(self, False)
         result[_K_PRICE] = bson.Decimal128(self.price)
         result['_id'] = {'provider': 'allegro', 'id': self.id}
         del result['id']

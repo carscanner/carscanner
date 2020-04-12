@@ -7,6 +7,7 @@ import bson
 from carscanner.dao import CarOffer
 from carscanner.dao.car_offer import _K_PRICE, _K_FIRST_SPOTTED, _K_ACTIVE
 
+
 class TestCarOffer(TestCase):
     def test_to_dict(self):
         ts = datetime.datetime.utcnow()

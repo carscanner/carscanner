@@ -1,5 +1,7 @@
 import abc
 
+import attr
+
 from carscanner.dao import CarOffer
 from carscanner.dao.car_offer import _K_PRICE, _K_FIRST_SPOTTED, _K_LAST_SPOTTED
 from carscanner.utils import datetime_to_unix
@@ -11,7 +13,7 @@ class BackupService(metaclass=abc.ABCMeta):
 
     @staticmethod
     def _convert(obj: CarOffer) -> dict:
-        result = obj.__dict__.copy()
+        result = attr.asdict(obj, False)
         result[_K_PRICE] = str(obj.price)
         result[_K_FIRST_SPOTTED] = datetime_to_unix(obj.first_spotted)
         if obj.last_spotted:
