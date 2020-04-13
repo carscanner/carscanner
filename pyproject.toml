@@ -3,7 +3,7 @@ authors = ["Matte Silver"]
 description = "Car offer scanner"
 license = "MIT"
 name = "carscanner"
-version = "1.4.7"
+version = "1.5.0"
 
 [tool.poetry.dependencies]
 attrs = "^19.3.0"
