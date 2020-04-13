@@ -5,7 +5,6 @@ import allegro_pl
 
 from carscanner.allegro import codes_path, EnvironClientCodeStore, YamlClientCodeStore
 from carscanner.context import ENV_LOCAL, ENV_TRAVIS
-from carscanner.dao import CarOfferDao
 from carscanner.service import FileBackupService
 
 
@@ -24,7 +23,9 @@ class CmdContext:
     backup_svc = FileBackupService
 
     def data_path(self) -> Path:
-        return Path(self._ns.output).expanduser()
+        result = Path(self._ns.data).expanduser()
+        result.mkdir(parents=True, exist_ok=True)
+        return result
 
     def export_path(self, data_path: Path) -> Path:
         export_name = self._ns.output if 'output' in self._ns else 'export.json'

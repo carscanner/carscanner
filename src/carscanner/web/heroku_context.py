@@ -9,6 +9,7 @@ class HerokuContext:
     def __init__(self):
         self.backup_remote = os.environ['BACKUP_REMOTE']
         self.data_path = pathlib.Path(os.environ['DATA_PATH']).expanduser()
+        self.data_path.mkdir(parents=True, exist_ok=True)
 
     backup_svc = carscanner.service.GitBackupService
 
