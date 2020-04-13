@@ -128,4 +128,5 @@ class OfferService:
             chunk_no += 1
 
     def _do_get_items_info(self, offer_ids: typing.List[str]):
-        return self._allegro.get_items_info(offer_ids, True, True, True).arrayItemListInfo.item
+        container = self._allegro.get_items_info(offer_ids, True, True, True).arrayItemListInfo
+        return container.item if container else []
