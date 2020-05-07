@@ -1,42 +1,42 @@
 import logging
+import typing
 from asyncio import Future
+from concurrent import futures
 
 import allegro_pl
-import pytel
-from pyramid.request import Request
 from pyramid.response import Response
 
-from carscanner.context import Config, Context
-from carscanner.web.heroku_context import HerokuContext
+from carscanner.service import VehicleUpdaterService
 
 log = logging.getLogger(__name__)
 
 
-class DataGatherService:
-    def __init__(self):
-        self._running = False
+def gather(
+        executor: futures.ThreadPoolExecutor,
+        vehicle_updater_svc: VehicleUpdaterService,
+) -> typing.Callable:
+    _running = False
 
-    def run(self, context, request: Request):
-        if self._running:
+    def run(*_):
+        nonlocal _running
+        if _running:
             return Response('<body>Already running</body>', content_type='text/html')
 
-        self._running = True
-
-        ctx = pytel.Pytel([Context(), HerokuContext(), {'config': Config()}])
+        _running = True
 
         def update():
             log.info('update called')
             try:
-                ctx.vehicle_updater_svc.update()
+                vehicle_updater_svc.update()
             except allegro_pl.TokenError:
                 log.error('Invalid token, fetch disabled. Exiting.', exc_info=True)
             except BaseException:
                 log.error("Error occurred", exc_info=True)
             finally:
-                self._running = False
-                ctx.close()
+                nonlocal _running
+                _running = False
 
-        f: Future = ctx.executor.submit(update)
+        f: Future = executor.submit(update)
 
         if f.done():
             if e := f.exception():
@@ -46,3 +46,5 @@ class DataGatherService:
 
         else:
             return Response('<body>Started</body>', content_type='text/html')
+
+    return run

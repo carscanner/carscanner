@@ -107,3 +107,16 @@ class CarOfferDao:
 
     def all(self) -> typing.Iterable[CarOffer]:
         return (CarOffer.from_dict(d) for d in self._col.find().sort([(_K_ID, 1)]))
+
+    def find_active_by_make_or_model(self, tokens: typing.List[str]) -> typing.List[dict]:
+        result = self._col.find(
+            {
+                _K_ACTIVE: True,
+                '$or': [
+                    {'make': {'$in': tokens}, },
+                    {'model': {'$in': tokens}, },
+                ],
+            },
+            limit=100,
+        )
+        return [obj for obj in result]
