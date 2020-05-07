@@ -18,6 +18,7 @@ class FilterService:
 
     def load_filters(self):
         log.debug("Get filters for %s", crit.category_name)
+        self._filter_dao.purge()
         filters = self._allegro.get_filters(crit.category_id)
         for filt in filters:
             filt = FilterService._filter_to_dict(crit.category_id, filt)

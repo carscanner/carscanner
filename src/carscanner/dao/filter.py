@@ -40,3 +40,6 @@ class FilterDao:
             return param_obj['id'], value_objects[0]
         else:
             raise ValueError("Didn't find single value", value_objects)
+
+    def purge(self):
+        self._tbl.purge()
