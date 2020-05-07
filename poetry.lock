@@ -543,8 +543,8 @@ category = "main"
 description = "Injection of dependencies for python 3"
 name = "pytel-inject"
 optional = false
-python-versions = ">=3.7,<4.0"
-version = "0.4"
+python-versions = ">=3.6,<4.0"
+version = "0.5.1"
 
 [[package]]
 category = "dev"
@@ -902,7 +902,7 @@ test = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 testing = ["coverage (>=5.0.3)", "zope.event", "zope.testing"]
 
 [metadata]
-content-hash = "0054810b734cb81df144ebbbd94f693e1ff2d94895f64326698d8cfcb90b386a"
+content-hash = "f9d664c48f1f3913a0b975644da88d7626ed498bb7ac2b09c9fe16e6507a1403"
 python-versions = "^3.8"
 
 [metadata.files]
@@ -1218,8 +1218,8 @@ pyramid-mako = [
     {file = "pyramid_mako-1.1.0.tar.gz", hash = "sha256:0066c863441f1c3ddea60cee1ccc50d00a91a317a8052ca44131da1a12a840e2"},
 ]
 pytel-inject = [
-    {file = "pytel-inject-0.4.tar.gz", hash = "sha256:9578dc3dd83dc453f470f896e64ffccd4cfedffc25a1db467488f1a498e894f3"},
-    {file = "pytel_inject-0.4-py3-none-any.whl", hash = "sha256:31fc082757de52ed9adc4f363edcd2958b8376215cd76cbded9e8147a95ae745"},
+    {file = "pytel-inject-0.5.1.tar.gz", hash = "sha256:f876ab7155e8f7d480dd626ba20946ab21e7d7c4bd1284d547c340ae4e35da4b"},
+    {file = "pytel_inject-0.5.1-py3-none-any.whl", hash = "sha256:52c960b07f9dfadcacc190a22328100c3b0011a0eba67e46894c08d81a1df925"},
 ]
 pytest = [
     {file = "pytest-5.4.1-py3-none-any.whl", hash = "sha256:0e5b30f5cb04e887b91b1ee519fa3d89049595f428c1db76e73bd7f17b09b172"},
