@@ -6,6 +6,7 @@ from pyramid.config import Configurator
 from waitress import serve
 
 from carscanner.utils import configure_logging
+from carscanner.web.request_factory import request_factory
 from carscanner.web.views import index, gather, search_vehicles as search
 from carscanner.context import Config, Context
 from carscanner.web.heroku_context import HerokuContext
@@ -37,7 +38,7 @@ if __name__ == '__main__':
             config.add_route('search', '/search')
             config.add_view(context.search, route_name='search', renderer='json')
 
-            config.registry
+            config.set_request_factory(request_factory)
 
             app = config.make_wsgi_app()
         serve(app, host='0.0.0.0', port=os.environ.get('PORT', '5000'))
